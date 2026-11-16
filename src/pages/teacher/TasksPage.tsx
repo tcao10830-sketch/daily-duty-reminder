@@ -259,9 +259,9 @@ export function TaskDetailPage() {
               {rows.map((row) => (
                 <tr key={row.assignmentId} className="border-t border-[#eef3f8]">
                   <td className="p-2 font-extrabold"><Link to={`/teacher/progress/${row.studentId}`}>{row.studentName}</Link></td>
-                  <td className="p-2"><SubmissionReview assignmentId={row.assignmentId} /></td>
                   <td className="p-2"><StatusPill status={row.status} /></td>
                   <td className="p-2 font-bold">{row.completedAt ? formatStamp(row.completedAt) : '—'}</td>
+                  <td className="p-2"><SubmissionReview assignmentId={row.assignmentId} /></td>
                   <td className="p-2">
                     {row.completedAt ? <Button tone="ghost" onClick={() => void act(`/api/teacher/assignments/${row.assignmentId}/reopen`, 'POST', () => setMessage('Task reopened.'))}>Reopen</Button> : null}
                   </td>
