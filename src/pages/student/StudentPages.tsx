@@ -32,11 +32,11 @@ export function StudentHomePage() {
     <div className="grid gap-4">
       <section className="dashboard-hero flex items-center justify-between gap-3 px-5 py-5 sm:px-7 sm:py-6">
         <div className="relative z-10 max-w-xl">
-          <span className="inline-flex rounded-full bg-white/75 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-[#a66b22]">Góc học tập của bạn</span>
-          <h1 className="mt-3 font-display text-3xl leading-tight text-[#34445e] sm:text-4xl">Xin chào, {user?.name}!</h1>
-          <p className="mt-2 max-w-lg text-sm font-bold leading-relaxed text-[#5f6d7f] sm:text-base">Nhiệm vụ hôm nay ở ngay bên dưới. Cứ từng bước nhỏ một nhé, bạn làm được!</p>
+          <span className="inline-flex rounded-full bg-white/75 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-[#a66b22]">Your study corner</span>
+          <h1 className="mt-3 font-display text-3xl leading-tight text-[#34445e] sm:text-4xl">Hello, {user?.name}!</h1>
+          <p className="mt-2 max-w-lg text-sm font-bold leading-relaxed text-[#5f6d7f] sm:text-base">Your duties for today are on the board below. One small step at a time — you’ve got this!</p>
           <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs font-extrabold text-[#4d8c6d]">
-            <span className="text-[#FF914D]">✦</span> Không ngừng tiến bộ mỗi ngày!
+            <span className="text-[#FF914D]">✦</span> Keep growing, keep glowing
           </div>
         </div>
         <div className="relative z-10 shrink-0">
@@ -44,14 +44,14 @@ export function StudentHomePage() {
         </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Được giao" value={data.stats.assigned} tint="#FFF3B0" />
-        <StatCard label="Đã hoàn thành" value={data.stats.completed} tint="#D8F6E4" />
-        <StatCard label="Đang chờ" value={data.stats.pending} tint="#D6E6FF" />
-        <StatCard label="Quá hạn" value={data.stats.overdue} tint="#FFD6E0" />
+        <StatCard label="Assigned" value={data.stats.assigned} tint="#FFF3B0" />
+        <StatCard label="Completed" value={data.stats.completed} tint="#D8F6E4" />
+        <StatCard label="Pending" value={data.stats.pending} tint="#D6E6FF" />
+        <StatCard label="Overdue" value={data.stats.overdue} tint="#FFD6E0" />
       </section>
-      <NoteGrid title="Hôm nay" notes={data.today} empty="Hôm nay không có nhiệm vụ đến hạn." />
-      <NoteGrid title="Sắp tới" notes={data.upcoming} empty="Không có nhiệm vụ sắp đến hạn." />
-      <NoteGrid title="Quá hạn" notes={data.overdue} empty="Không có nhiệm vụ quá hạn." />
+      <NoteGrid title="Today" notes={data.today} empty="Nothing due today." />
+      <NoteGrid title="Coming up" notes={data.upcoming} empty="No upcoming deadlines." />
+      <NoteGrid title="Overdue" notes={data.overdue} empty="No overdue tasks." />
     </div>
   );
 }
@@ -99,11 +99,11 @@ export function MyTasksPage() {
     return true;
   });
   const filters = [
-    ['all', 'Tất cả'],
-    ['todo', 'Chưa bắt đầu'],
-    ['progress', 'Đang thực hiện'],
-    ['done', 'Đã hoàn thành'],
-    ['overdue', 'Quá hạn'],
+    ['all', 'All'],
+    ['todo', 'To Do'],
+    ['progress', 'In Progress'],
+    ['done', 'Completed'],
+    ['overdue', 'Overdue'],
   ];
   return (
     <div className="grid gap-4">
@@ -114,7 +114,7 @@ export function MyTasksPage() {
           </button>
         ))}
       </div>
-      {notes.length === 0 ? <Empty>Không có nhiệm vụ nào trong danh sách này.</Empty> : (
+      {notes.length === 0 ? <Empty>No tasks in this list.</Empty> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {notes.map((note) => (
             <StickyNote
@@ -155,7 +155,7 @@ export function StudentTaskPage() {
   const [showCelebration, setShowCelebration] = useState(false);
   const closeCelebration = useCallback(() => setShowCelebration(false), []);
   if (loading && !data) return <Loading />;
-  if (!data) return <Banner tone="error">{error || 'Không tìm thấy nhiệm vụ.'}</Banner>;
+  if (!data) return <Banner tone="error">{error || 'Task not found.'}</Banner>;
   const task = data.assignment;
   const done = task.status === 'on_time' || task.status === 'late';
   const latest = submissions.data?.submissions?.[0];
@@ -167,10 +167,10 @@ export function StudentTaskPage() {
     setMessage('');
     try {
       const totalBytes = files.reduce((sum, item) => sum + item.size, 0);
-      if (totalBytes > 10 * 1024 * 1024) throw new Error('Tổng dung lượng các tệp không được vượt quá 10 MB.');
+      if (totalBytes > 10 * 1024 * 1024) throw new Error('All files together must be 10 MB or smaller.');
       const payload: Record<string, unknown> = { linkUrl: link.trim(), comment };
       if (files.length) payload.files = await Promise.all(files.map((item) => fileUploadPayload(item)));
-      if (!files.length && !link.trim()) throw new Error('Hãy chọn ít nhất một tệp hoặc thêm đường dẫn trước khi nộp.');
+      if (!files.length && !link.trim()) throw new Error('Choose one or more files or add a link before submitting.');
       await api(`/api/student/assignments/${task.assignmentId}/submissions`, {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -178,12 +178,12 @@ export function StudentTaskPage() {
       setFiles([]);
       setLink('');
       setComment('');
-      setMessage('Bạn đã nộp bài thành công! Nhiệm vụ sẽ được đánh dấu hoàn thành sau khi giáo viên duyệt.');
+      setMessage('Your work has been submitted. It will be marked complete after your teacher approves it.');
       setShowCelebration(true);
       playSubmissionCelebration();
       bump();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Không thể nộp bài.');
+      setFormError(err instanceof Error ? err.message : 'Could not submit your work.');
     } finally {
       setBusy(false);
     }
@@ -207,22 +207,22 @@ export function StudentTaskPage() {
         status={task.status}
       />
       <section className="rounded-3xl bg-white p-5 shadow-sm">
-        <p className="font-bold">Hạn nộp {formatLongDate(task.deadlineDate)} lúc {formatTime(task.deadlineTime)}</p>
-        <div className="mt-3 rounded-2xl bg-[#FFF3B0] p-3 font-extrabold">Xử lý nếu nộp muộn: {task.penalty || 'Không có'}</div>
-        {task.instructions ? <p className="mt-3 font-bold">Hướng dẫn: {task.instructions}</p> : null}
+        <p className="font-bold">Due {formatLongDate(task.deadlineDate)} at {formatTime(task.deadlineTime)}</p>
+        <div className="mt-3 rounded-2xl bg-[#FFF3B0] p-3 font-extrabold">Penalty if late: {task.penalty || 'None'}</div>
+        {task.instructions ? <p className="mt-3 font-bold">Instructions: {task.instructions}</p> : null}
         <div className="mt-4"><StatusPill status={task.status} /></div>
         {done && task.completedAt ? (
           <p className="mt-4 font-extrabold text-[#067a4b]" data-testid="completed-stamp">
-            Giáo viên đã duyệt · {formatStamp(task.completedAt)}
+            Approved by your teacher · {formatStamp(task.completedAt)}
           </p>
         ) : null}
       </section>
 
       <section className="rounded-3xl bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-lg font-extrabold">Tài liệu giáo viên gửi</h2>
+        <h2 className="mb-3 text-lg font-extrabold">Materials from your teacher</h2>
         {materials.loading && !materials.data ? <Loading /> : null}
         {materials.error ? <Banner tone="error">{materials.error}</Banner> : null}
-        {(materials.data?.materials ?? []).length === 0 ? <p className="text-sm font-semibold text-slate-500">Chưa có tài liệu tham khảo.</p> : (
+        {(materials.data?.materials ?? []).length === 0 ? <p className="text-sm font-semibold text-slate-500">No reference materials attached.</p> : (
           <ul className="grid gap-2">
             {materials.data?.materials.map((item) => (
               <li key={item.id}>
@@ -234,10 +234,10 @@ export function StudentTaskPage() {
       </section>
 
       <section className="rounded-3xl bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-lg font-extrabold">Bài nộp của bạn</h2>
+        <h2 className="mb-3 text-lg font-extrabold">Your submission</h2>
         {latest ? (
           <div className="mb-4 rounded-2xl bg-[#f4f8ff] p-3">
-            <p className="font-extrabold">Lần nộp gần nhất</p>
+            <p className="font-extrabold">Latest submission</p>
             <div className="mt-1 grid gap-1">
               {(latest.files?.length ? latest.files : [{ file_name: latest.file_name, signedUrl: latest.signedUrl }]).map((item, index) => (
                 <a key={`${item.file_name}-${index}`} className="break-all text-sm font-bold text-[#315fc4] underline" href={item.signedUrl || latest.link_url || '#'} target="_blank" rel="noreferrer">{item.file_name}</a>
@@ -246,38 +246,38 @@ export function StudentTaskPage() {
             <p className="text-xs font-semibold text-slate-500">{formatStamp(latest.created_at)}</p>
             {latest.review ? (
               <div className={`mt-2 rounded-xl p-3 font-bold ${latest.review.status === 'approved' ? 'bg-[#D8F6E4] text-green-800' : 'bg-[#FFE0C2] text-orange-900'}`}>
-                {latest.review.status === 'approved' ? 'Đã duyệt' : 'Vui lòng chỉnh sửa và nộp lại'}
-                {latest.review.feedback ? <p className="mt-1 font-semibold">Nhận xét của giáo viên: {latest.review.feedback}</p> : null}
+                {latest.review.status === 'approved' ? 'Approved' : 'Please revise and submit again'}
+                {latest.review.feedback ? <p className="mt-1 font-semibold">Teacher feedback: {latest.review.feedback}</p> : null}
               </div>
-            ) : <p className="mt-2 text-sm font-bold text-[#315fc4]">Đang chờ giáo viên xem bài.</p>}
+            ) : <p className="mt-2 text-sm font-bold text-[#315fc4]">Waiting for your teacher to review.</p>}
           </div>
-        ) : <p className="mb-3 text-sm font-semibold text-slate-500">Bạn cần nộp tệp hoặc đường dẫn trước khi nhiệm vụ được ghi nhận hoàn thành.</p>}
+        ) : <p className="mb-3 text-sm font-semibold text-slate-500">You need to submit a file or a link before this task can be completed.</p>}
 
         {!done ? (
           <form className="grid gap-3" onSubmit={(event) => void submitWork(event)}>
-            <Field label="Tải tệp hoặc ảnh lên (PDF, Word hoặc hình ảnh — tổng tối đa 10 MB)">
+            <Field label="Upload files or photos (PDF, Word or images — 10 MB total)">
               <input className={controlClass} type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} />
               {files.length > 0 ? (
                 <div className="mt-2 grid gap-1 rounded-xl bg-[#f4f8ff] p-2 text-sm">
                   {files.map((item, index) => (
                     <div key={`${item.name}-${index}`} className="flex items-center justify-between gap-2">
                       <span className="min-w-0 break-all">{item.name} · {(item.size / 1024 / 1024).toFixed(2)} MB</span>
-                      <button type="button" className="shrink-0 font-extrabold text-red-600" onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}>Xóa</button>
+                      <button type="button" className="shrink-0 font-extrabold text-red-600" onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}>Remove</button>
                     </div>
                   ))}
-                  <p className="font-extrabold">Tổng cộng: {(files.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024).toFixed(2)} / 10 MB</p>
+                  <p className="font-extrabold">Total: {(files.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024).toFixed(2)} / 10 MB</p>
                 </div>
               ) : null}
             </Field>
-            <Field label="Hoặc dán đường dẫn">
+            <Field label="Or paste a link">
               <input className={controlClass} type="url" value={link} onChange={(event) => setLink(event.target.value)} placeholder="https://..." />
             </Field>
-            <Field label="Lời nhắn cho giáo viên (không bắt buộc)">
-              <textarea className={controlClass} rows={2} value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Viết lời nhắn ngắn..." />
+            <Field label="Message to your teacher (optional)">
+              <textarea className={controlClass} rows={2} value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Add a short note..." />
             </Field>
             {formError ? <Banner tone="error">{formError}</Banner> : null}
             {message ? <Banner tone="ok">{message}</Banner> : null}
-            <Button type="submit" tone="green" disabled={busy}>{busy ? 'Đang nộp bài…' : latest?.review?.status === 'revision_requested' ? 'Nộp lại bài đã chỉnh sửa' : 'Gửi bài để giáo viên duyệt'}</Button>
+            <Button type="submit" tone="green" disabled={busy}>{busy ? 'Submitting…' : latest?.review?.status === 'revision_requested' ? 'Submit revised work' : 'Submit work for review'}</Button>
           </form>
         ) : null}
       </section>
@@ -306,13 +306,13 @@ export function StudentProgressPage() {
     <div className="grid gap-4">
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-sm">
         <div>
-          <h1 className="text-2xl font-extrabold">Tiến độ của tôi</h1>
-          <p className="font-bold">{data.stats.assigned} được giao · {data.stats.completed} đã hoàn thành · {data.stats.pending} đang chờ · {data.stats.overdue} quá hạn</p>
+          <h1 className="text-2xl font-extrabold">My progress</h1>
+          <p className="font-bold">{data.stats.assigned} assigned · {data.stats.completed} completed · {data.stats.pending} pending · {data.stats.overdue} overdue</p>
         </div>
         <Ring value={data.stats.completionRate} />
       </section>
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="mb-2 font-extrabold">Hoạt động trong tuần</h2>
+        <h2 className="mb-2 font-extrabold">Weekly activity</h2>
         <WeekBars days={data.weekly} />
       </section>
       <section className="grid gap-2">
@@ -321,7 +321,7 @@ export function StudentProgressPage() {
             {task.title} · {STATUS_LABEL[task.status]} {task.completedAt ? `· ${formatStamp(task.completedAt)}` : ''}
           </Link>
         ))}
-        {data.completed.length === 0 ? <Empty>Các nhiệm vụ đã hoàn thành sẽ xuất hiện tại đây.</Empty> : null}
+        {data.completed.length === 0 ? <Empty>Completed tasks will show up here.</Empty> : null}
       </section>
     </div>
   );
@@ -335,10 +335,10 @@ export function StudentNotificationsPage() {
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">Thông báo</h1>
-        <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Đánh dấu đã đọc tất cả</Button>
+        <h1 className="text-2xl font-extrabold">Notifications</h1>
+        <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Mark all read</Button>
       </div>
-      {data?.notifications.length === 0 ? <Empty>Chưa có thông báo nào</Empty> : null}
+      {data?.notifications.length === 0 ? <Empty>No notifications yet.</Empty> : null}
       {data?.notifications.map((item) => (
         <button key={item.id} type="button" onClick={() => void api(`/api/notifications/${item.id}/read`, { method: 'POST' }).then(() => bump())} className={`rounded-3xl p-4 text-left shadow-sm ${item.read ? 'bg-white' : 'bg-[#D6E6FF]'}`}>
           <p className="font-extrabold">{item.title}</p>
@@ -363,17 +363,17 @@ export function ProfilePage() {
         api<{ user: User }>('/api/me', { method: 'PATCH', body: JSON.stringify({ name }) })
           .then((result) => {
             setUser(result.user);
-            setMessage('Đã lưu hồ sơ.');
+            setMessage('Profile saved.');
           })
           .catch((err: Error) => setError(err.message));
       }}
     >
-      <h1 className="text-2xl font-extrabold">Hồ sơ</h1>
+      <h1 className="text-2xl font-extrabold">Profile</h1>
       {message ? <Banner tone="ok">{message}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
-      <Field label="Họ và tên"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
+      <Field label="Name"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
       <p className="font-bold text-slate-500">{user?.email}</p>
-      <Button type="submit">Lưu</Button>
+      <Button type="submit">Save</Button>
     </form>
   );
 }
