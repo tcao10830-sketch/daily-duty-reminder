@@ -22,18 +22,20 @@ type StoredFile = {
 
 function config() {
   const url = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '';
-  if (!url || !key) throw new HttpError(503, 'Supabase is not connected yet. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Render.');
-  return { url, key };
+  const legacyKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const secretKey = process.env.SUPABASE_SECRET_KEY || '';
+  const key = secretKey || legacyKey;
+  if (!url || !key) throw new HttpError(503, 'Supabase is not connected yet. Add SUPABASE_URL and SUPABASE_SECRET_KEY in Render.');
+  return { url, key, legacy: !secretKey && Boolean(legacyKey) };
 }
 
 async function request(path: string, init: RequestInit = {}) {
-  const { url, key } = config();
+  const { url, key, legacy } = config();
   const response = await fetch(`${url}${path}`, {
     ...init,
     headers: {
       apikey: key,
-      Authorization: `Bearer ${key}`,
+      ...(legacy ? { Authorization: `Bearer ${key}` } : {}),
       ...(init.headers || {}),
     },
   });
