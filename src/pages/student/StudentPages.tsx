@@ -207,7 +207,7 @@ export function StudentTaskPage() {
         status={task.status}
       />
       <section className="rounded-3xl bg-white p-5 shadow-sm">
-        <p className="font-bold">Due {formatLongDate(task.deadlineDate)} at {formatTime(task.deadlineTime)}</p>
+        <p className="font-bold">Hạn nộp {formatLongDate(task.deadlineDate)} lúc {formatTime(task.deadlineTime)}</p>
         <div className="mt-3 rounded-2xl bg-[#FFF3B0] p-3 font-extrabold">Xử lý nếu nộp muộn: {task.penalty || 'Không có'}</div>
         {task.instructions ? <p className="mt-3 font-bold">Hướng dẫn: {task.instructions}</p> : null}
         <div className="mt-4"><StatusPill status={task.status} /></div>
@@ -246,7 +246,7 @@ export function StudentTaskPage() {
             <p className="text-xs font-semibold text-slate-500">{formatStamp(latest.created_at)}</p>
             {latest.review ? (
               <div className={`mt-2 rounded-xl p-3 font-bold ${latest.review.status === 'approved' ? 'bg-[#D8F6E4] text-green-800' : 'bg-[#FFE0C2] text-orange-900'}`}>
-                {latest.review.status === 'approved' ? 'Approved' : 'Vui lòng chỉnh sửa và nộp lại'}
+                {latest.review.status === 'approved' ? 'Đã duyệt' : 'Vui lòng chỉnh sửa và nộp lại'}
                 {latest.review.feedback ? <p className="mt-1 font-semibold">Nhận xét của giáo viên: {latest.review.feedback}</p> : null}
               </div>
             ) : <p className="mt-2 text-sm font-bold text-[#315fc4]">Đang chờ giáo viên xem bài.</p>}
