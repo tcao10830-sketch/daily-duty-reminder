@@ -53,6 +53,23 @@ function safeName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || 'upload';
 }
 
+function storedPaths(value: string | null): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter((item) => typeof item === 'string');
+  } catch {}
+  return [value];
+}
+
+function storedNames(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map(String);
+  } catch {}
+  return [value];
+}
+
 function decodeFile(body: Record<string, unknown>) {
   const name = String(body.fileName || '').trim();
   const mime = String(body.mimeType || '').toLowerCase();
@@ -78,13 +95,35 @@ async function uploadFile(body: Record<string, unknown>, folder: string) {
   config();
   const file = decodeFile(body);
   const path = `${folder}/${randomUUID()}-${file.name}`;
-  const response = await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, {
+  await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, {
     method: 'POST',
     headers: { 'Content-Type': file.mime, 'x-upsert': 'false' },
     body: file.buffer as unknown as BodyInit,
   });
-  void response;
   return { path, name: file.name, mime: file.mime, size: file.buffer.length };
+}
+
+async function uploadMany(files: Record<string, unknown>[], folder: string) {
+  if (!files.length) return [];
+  const decoded = files.map(decodeFile);
+  const total = decoded.reduce((sum, item) => sum + item.buffer.length, 0);
+  if (total > maxBytes) throw new HttpError(413, 'All files together must be 10 MB or smaller.');
+  const uploaded: { path: string; name: string; mime: string; size: number }[] = [];
+  try {
+    for (const file of decoded) {
+      const path = `${folder}/${randomUUID()}-${file.name}`;
+      await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.mime, 'x-upsert': 'false' },
+        body: file.buffer as unknown as BodyInit,
+      });
+      uploaded.push({ path, name: file.name, mime: file.mime, size: file.buffer.length });
+    }
+    return uploaded;
+  } catch (error) {
+    await Promise.all(uploaded.map((item) => request(`/storage/v1/object/${bucket}/${item.path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' }).catch(() => null)));
+    throw error;
+  }
 }
 
 async function signedUrl(path: string | null) {
@@ -134,20 +173,24 @@ export async function createMaterial(taskId: string, teacherId: string, body: Re
   });
 }
 
-export async function createSubmission(assignmentId: string, studentId: string, body: Record<string, unknown>) {
+export async function createSubmission(assignmentId: string, studentId: string, body: Record<string, unknown>, expiresAt: string) {
   const link = String(body.linkUrl || '').trim();
-  let file: { path: string; name: string; mime: string; size: number } | null = null;
-  if (body.base64) file = await uploadFile(body, `submissions/${assignmentId}`);
-  if (!file && !/^https?:\/\//i.test(link)) throw new HttpError(400, 'Submit a file or a valid https:// link.');
+  const suppliedFiles = Array.isArray(body.files) ? body.files as Record<string, unknown>[] : [];
+  const files = suppliedFiles.length ? await uploadMany(suppliedFiles, `submissions/${assignmentId}`) :
+    body.base64 ? [await uploadFile(body, `submissions/${assignmentId}`)] : [];
+  if (!files.length && !/^https?:\/\//i.test(link)) throw new HttpError(400, 'Submit one or more files or a valid https:// link.');
+  const total = files.reduce((sum, item) => sum + item.size, 0);
+  if (total > maxBytes) throw new HttpError(413, 'All files together must be 10 MB or smaller.');
   return await insert('assignment_submissions', {
     assignment_id: assignmentId,
     student_id: studentId,
-    file_name: file?.name || String(body.label || 'Submitted link').slice(0, 160),
-    storage_path: file?.path || null,
-    mime_type: file?.mime || null,
-    size_bytes: file?.size || 0,
-    link_url: file ? null : link,
+    file_name: files.length ? JSON.stringify(files.map((item) => item.name)) : String(body.label || 'Submitted link').slice(0, 160),
+    storage_path: files.length ? JSON.stringify(files.map((item) => item.path)) : null,
+    mime_type: files.length ? JSON.stringify(files.map((item) => item.mime)) : null,
+    size_bytes: total,
+    link_url: files.length ? null : link,
     comment: String(body.comment || '').slice(0, 1000),
+    expires_at: expiresAt,
   });
 }
 
@@ -156,7 +199,14 @@ export async function listSubmissions(assignmentId: string, studentId?: string) 
   const items = await rows('assignment_submissions', `assignment_id=eq.${encodeURIComponent(assignmentId)}&select=*&order=created_at.desc${filter}`);
   return await Promise.all(items.map(async (item) => {
     const reviews = await rows('assignment_reviews', `submission_id=eq.${encodeURIComponent(item.id)}&select=*&order=created_at.desc&limit=1`);
-    return { ...item, signedUrl: await signedUrl(item.storage_path), review: reviews[0] || null };
+    const paths = storedPaths(item.storage_path);
+    const names = storedNames(item.file_name);
+    const files = await Promise.all(paths.map(async (path, index) => ({
+      file_name: names[index] || item.file_name,
+      signedUrl: await signedUrl(path),
+    })));
+    const primaryUrl = files[0]?.signedUrl || null;
+    return { ...item, files, signedUrl: primaryUrl, review: reviews[0] || null };
   }));
 }
 
@@ -175,4 +225,19 @@ export async function reviewSubmission(submissionId: string, teacherId: string, 
     feedback: feedback.slice(0, 2000),
   });
   return { submission, review: result };
+}
+
+
+export async function cleanupExpiredSubmissions() {
+  const expired = await rows('assignment_submissions', `expires_at=lte.${encodeURIComponent(new Date().toISOString())}&select=id,storage_path`);
+  let removed = 0;
+  for (const item of expired) {
+    const paths = storedPaths(item.storage_path);
+    for (const path of paths) {
+      await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
+    }
+    await request(`/rest/v1/assignment_submissions?id=eq.${encodeURIComponent(item.id)}`, { method: 'DELETE' });
+    removed += 1;
+  }
+  return removed;
 }
