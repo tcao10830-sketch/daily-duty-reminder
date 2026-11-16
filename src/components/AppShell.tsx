@@ -8,22 +8,22 @@ import { playNotificationSound } from '../lib/sounds';
 import type { NotificationItem } from '../types';
 
 const teacherLinks = [
-  ['/teacher', 'Dashboard', '✦'],
-  ['/teacher/classes', 'Classes', '▦'],
-  ['/teacher/tasks', 'Tasks', '✓'],
-  ['/teacher/calendar', 'Calendar', '▣'],
-  ['/teacher/progress', 'Student Progress', '↗'],
-  ['/teacher/notifications', 'Notifications', '♧'],
-  ['/teacher/settings', 'Settings', '⚙'],
+  ['/teacher', 'Tổng quan', '✦'],
+  ['/teacher/classes', 'Lớp học', '▦'],
+  ['/teacher/tasks', 'Nhiệm vụ', '✓'],
+  ['/teacher/calendar', 'Lịch', '▣'],
+  ['/teacher/progress', 'Tiến độ học sinh', '↗'],
+  ['/teacher/notifications', 'Thông báo', '♧'],
+  ['/teacher/settings', 'Cài đặt', '⚙'],
 ];
 
 const studentLinks = [
-  ['/student', 'Home', '⌂'],
-  ['/student/tasks', 'My Tasks', '✓'],
+  ['/student', 'Trang chủ', '⌂'],
+  ['/student/tasks', 'Việc cần làm', '✓'],
   ['/student/calendar', 'Calendar', '▣'],
-  ['/student/progress', 'My Progress', '↗'],
+  ['/student/progress', 'Tiến độ của tôi', '↗'],
   ['/student/notifications', 'Notifications', '♧'],
-  ['/student/profile', 'Profile', '☺'],
+  ['/student/profile', 'Hồ sơ', '☺'],
 ];
 
 export function AppShell() {
@@ -58,14 +58,14 @@ export function AppShell() {
         <div className="relative z-10 flex items-center gap-2">
           <div className="hidden items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-xs font-extrabold text-[#52705f] sm:flex">
             <span className="text-[#38C98B]">●</span>
-            {user?.role === 'teacher' ? 'Teacher space' : 'Student space'}
+            {user?.role === 'teacher' ? 'Khu vực giáo viên' : 'Khu vực học sinh'}
           </div>
           <button type="button" onClick={logout} className="rounded-full border border-white bg-white/90 px-4 py-2 text-sm font-extrabold text-[#40516b] shadow-sm hover:bg-[#fff3d1]">
-            Log out
+            Đăng xuất
           </button>
         </div>
       </header>
-      <nav className="app-nav mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Main navigation">
+      <nav className="app-nav mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Điều hướng chính">
         {links.map(([to, label, symbol]) => (
           <NavLink
             key={to}
@@ -87,7 +87,7 @@ export function AppShell() {
         <Outlet />
       </main>
       <footer className="mt-10 flex items-center justify-center gap-2 pb-4 text-xs font-bold text-slate-400">
-        <span>Made for a brighter study day</span>
+        <span>Mỗi ngày học tập thêm vui</span>
         <span className="text-[#FFB94D]">✦</span>
       </footer>
     </div>
