@@ -29,7 +29,7 @@ export function DashboardPage() {
             <span aria-hidden="true">＋</span> Create a task
           </Link>
         </div>
-        <div className="relative z-10 hidden shrink-0 sm:block">
+        <div className="relative z-10 shrink-0">
           <Mascot size={142} />
           <span className="absolute -bottom-1 -left-5 -rotate-6 rounded-xl bg-white px-3 py-1.5 text-xs font-extrabold text-[#5a8b71] shadow-sm">You’ve got this!</span>
         </div>
