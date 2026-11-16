@@ -178,6 +178,8 @@ export async function registerTeacher(input: { name: unknown; email: unknown; pa
   if (password.length < 6) throw new HttpError(400, 'Password must be at least 6 characters.');
   const passwordHash = await hashPassword(password);
   return withDb(() => {
+    const teacherExists = db.prepare("SELECT id FROM users WHERE role = 'teacher' LIMIT 1").get();
+    if (teacherExists) throw new HttpError(403, 'A teacher account already exists. Please sign in.');
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existing) throw new HttpError(400, 'That email is already registered.');
     const user: PublicUser = { id: id(), name, email, role: 'teacher' };
