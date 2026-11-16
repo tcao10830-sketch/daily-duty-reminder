@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarBoard } from '../../components/CalendarBoard';
-import { Banner, Button, Empty, Field, Loading, Ring, Trạng tháiPill, WeekBars, controlClass } from '../../components/ui';
+import { Banner, Button, Empty, Field, Loading, Ring, StatusPill, WeekBars, controlClass } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import { formatStamp } from '../../lib/format';
 import { useQuery } from '../../lib/query';
-import type { AssignmentCard, ClassSummary, NotificationItem, Nhiệm vụSummary, User, WeekPoint } from '../../types';
+import type { AssignmentCard, ClassSummary, NotificationItem, TaskSummary, User, WeekPoint } from '../../types';
 
 export function TeacherCalendarPage() {
-  const { data, loading, error } = useQuery<{ tasks: Nhiệm vụSummary[] }>('/api/teacher/tasks');
+  const { data, loading, error } = useQuery<{ tasks: TaskSummary[] }>('/api/teacher/tasks');
   if (loading && !data) return <Loading />;
   if (error) return <Banner tone="error">{error}</Banner>;
   const items = (data?.tasks ?? [])
-    .filter((task) => task.taskTrạng thái === 'active')
+    .filter((task) => task.taskStatus === 'active')
     .map((task) => ({
       date: task.deadlineDate,
       title: task.title,
@@ -24,10 +24,10 @@ export function TeacherCalendarPage() {
 }
 
 export function ProgressPage() {
-  const overview = useQuery<{ classes: ClassSummary[]; tasks: Nhiệm vụSummary[] }>('/api/teacher/overview');
+  const overview = useQuery<{ classes: ClassSummary[]; tasks: TaskSummary[] }>('/api/teacher/overview');
   if (overview.loading && !overview.data) return <Loading />;
   if (!overview.data) return <Banner tone="error">{overview.error}</Banner>;
-  const tasks = overview.data.tasks.filter((task) => task.taskTrạng thái === 'active');
+  const tasks = overview.data.tasks.filter((task) => task.taskStatus === 'active');
   return (
     <div className="grid gap-4">
       <section className="grid gap-3 sm:grid-cols-2">
@@ -37,7 +37,7 @@ export function ProgressPage() {
               <h2 className="text-xl font-extrabold">{item.name}</h2>
               <Ring value={item.completionRate} />
             </div>
-            <p className="font-bold text-slate-500">{item.completedCount} đã hoàn thành · {item.pendingCount} đang chờ · {item.quá hạnCount} quá hạn</p>
+            <p className="font-bold text-slate-500">{item.completedCount} completed · {item.pendingCount} pending · {item.overdueCount} overdue</p>
           </Link>
         ))}
       </section>
@@ -61,7 +61,7 @@ export function StudentProgressPage() {
   const { id = '' } = useParams();
   const { data, error, loading } = useQuery<{
     student: { name: string; email: string; class_name: string };
-    stats: { assigned: number; completed: number; pending: number; quá hạn: number; completionRate: number };
+    stats: { assigned: number; completed: number; pending: number; overdue: number; completionRate: number };
     assignments: AssignmentCard[];
     weekly: WeekPoint[];
   }>(`/api/teacher/students/${id}`);
@@ -73,7 +73,7 @@ export function StudentProgressPage() {
         <div>
           <h1 className="text-2xl font-extrabold">{data.student.name}</h1>
           <p className="font-bold text-slate-500">{data.student.class_name} · {data.student.email}</p>
-          <p className="mt-2 font-bold">{data.stats.completed} đã hoàn thành · {data.stats.pending} đang chờ · {data.stats.quá hạn} quá hạn</p>
+          <p className="mt-2 font-bold">{data.stats.completed} completed · {data.stats.pending} pending · {data.stats.overdue} overdue</p>
         </div>
         <Ring value={data.stats.completionRate} />
       </section>
@@ -83,12 +83,12 @@ export function StudentProgressPage() {
       </section>
       <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="font-extrabold"><tr><th className="p-3">Nhiệm vụ</th><th className="p-3">Trạng thái</th><th className="p-3">Hoàn thành</th></tr></thead>
+          <thead className="font-extrabold"><tr><th className="p-3">Nhiệm vụ</th><th className="p-3">Trạng thái</th><th className="p-3">Đã hoàn thành</th></tr></thead>
           <tbody>
             {data.assignments.map((row) => (
               <tr key={row.assignmentId} className="border-t">
                 <td className="p-3 font-extrabold"><Link to={`/teacher/tasks/${row.taskId}`}>{row.title}</Link></td>
-                <td className="p-3"><Trạng tháiPill status={row.status} /></td>
+                <td className="p-3"><StatusPill status={row.status} /></td>
                 <td className="p-3 font-bold">{row.completedAt ? formatStamp(row.completedAt) : '—'}</td>
               </tr>
             ))}
@@ -99,7 +99,7 @@ export function StudentProgressPage() {
   );
 }
 
-export function Thông báoPage() {
+export function NotificationsPage() {
   const { data, error, loading } = useQuery<{ notifications: NotificationItem[]; unread: number }>('/api/notifications');
   const { bump } = useAuth();
   if (loading && !data) return <Loading />;
@@ -110,7 +110,7 @@ export function Thông báoPage() {
         <h1 className="text-2xl font-extrabold">Thông báo</h1>
         <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Đánh dấu đã đọc tất cả</Button>
       </div>
-      {data?.notifications.length === 0 ? <Empty>No notifications yet. They appear when tasks are assigned, updated, completed, or become quá hạn.</Empty> : null}
+      {data?.notifications.length === 0 ? <Empty>Thông báo sẽ xuất hiện khi có nhiệm vụ mới, được cập nhật, hoàn thành hoặc quá hạn.</Empty> : null}
       {data?.notifications.map((item) => (
         <button
           key={item.id}
@@ -127,7 +127,7 @@ export function Thông báoPage() {
   );
 }
 
-export function Cài đặtPage() {
+export function SettingsPage() {
   const { user, setUser, bump } = useAuth();
   const [name, setName] = useState(user?.name ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -165,7 +165,7 @@ export function Cài đặtPage() {
         }}
       >
         <Field label="Tên hiển thị"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
-        <p className="text-sm font-bold text-slate-500">{user?.email} · {user?.role} · Thời gian theo múi giờ Việt Nam</p>
+        <p className="text-sm font-bold text-slate-500">{user?.email} · {user?.role} · thời gian theo múi giờ Việt Nam</p>
         <Button type="submit">Lưu tên</Button>
       </form>
       <form
@@ -213,7 +213,7 @@ export function Cài đặtPage() {
           <Field label="Tên giáo viên"><input className={controlClass} value={teacherName} onChange={(event) => setTeacherName(event.target.value)} required /></Field>
           <Field label="Email giáo viên"><input className={controlClass} type="email" value={teacherEmail} onChange={(event) => setTeacherEmail(event.target.value)} required /></Field>
           <Field label="Mật khẩu tạm thời"><input className={controlClass} type="password" minLength={6} value={teacherPassword} onChange={(event) => setTeacherPassword(event.target.value)} required /></Field>
-          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Đang tạo…' : 'Tạo tài khoản giáo viên'}</Button>
+          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Đang tạo…' : 'Create teacher account'}</Button>
         </form>
       ) : null}
     </div>
