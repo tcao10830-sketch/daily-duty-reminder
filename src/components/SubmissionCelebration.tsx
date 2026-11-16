@@ -47,8 +47,8 @@ export function SubmissionCelebration({ onDone }: { onDone: () => void }) {
       </div>
       <div className="celebration-message">
         <span className="celebration-sparkle" aria-hidden="true">✦</span>
-        <strong>SUBMITTED!</strong>
-        <span>Your hard work is on its way!</span>
+        <strong>NỘP BÀI THÀNH CÔNG!</strong>
+        <span>Bài làm của bạn đã được gửi đi!</span>
         <span className="celebration-mini-stars" aria-hidden="true">✦　✧　✦</span>
       </div>
     </div>
