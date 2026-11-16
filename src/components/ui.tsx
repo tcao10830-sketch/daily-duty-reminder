@@ -83,7 +83,7 @@ export function Countdown({ deadlineAt, status }: { deadlineAt: string; status: 
   const mins = Math.floor((total % 3600) / 60);
   const secs = total % 60;
   const soon = diff < 3 * 60 * 60 * 1000;
-  const label = days > 0 ? `${days}d ${hours}h còn lại` : hours > 0 ? `${hours}h ${mins}m còn lại` : `${mins}m ${secs}s còn lại`;
+  const label = days > 0 ? `${days} ngày ${hours} giờ còn lại` : hours > 0 ? `${hours} giờ ${mins} phút còn lại` : `${mins} phút ${secs} giây còn lại`;
   return <span className={soon ? 'font-extrabold text-[#EF5B68]' : 'font-bold text-[#315fbf]'}>{soon ? 'Nhắc nhở · ' : ''}{label}</span>;
 }
 
