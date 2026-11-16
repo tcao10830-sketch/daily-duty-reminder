@@ -195,6 +195,39 @@ export async function registerTeacher(input: { name: unknown; email: unknown; pa
   });
 }
 
+
+export function authSetup() {
+  return withDb(() => ({
+    hasTeacher: Boolean(db.prepare("SELECT id FROM users WHERE role = 'teacher' LIMIT 1").get()),
+  }));
+}
+
+export function isPrimaryTeacher(userId: string): Promise<boolean> {
+  return withDb(() => {
+    const first = db.prepare("SELECT id FROM users WHERE role = 'teacher' ORDER BY created_at ASC, id ASC LIMIT 1").get() as { id: string } | undefined;
+    return first?.id === userId;
+  });
+}
+
+export async function registerAdditionalTeacher(creatorId: string, input: { name: unknown; email: unknown; password: unknown }): Promise<PublicUser> {
+  const name = requireText(input.name, 'Name', 80);
+  const email = requireText(input.email, 'Email', 120).toLowerCase();
+  const password = String(input.password ?? '');
+  if (!email.includes('@')) throw new HttpError(400, 'Enter a valid email.');
+  if (password.length < 6) throw new HttpError(400, 'Password must be at least 6 characters.');
+  const passwordHash = await hashPassword(password);
+  return withDb(() => {
+    const first = db.prepare("SELECT id FROM users WHERE role = 'teacher' ORDER BY created_at ASC, id ASC LIMIT 1").get() as { id: string } | undefined;
+    if (!first || first.id !== creatorId) throw new HttpError(403, 'Only the first teacher can create teacher accounts.');
+    if (db.prepare('SELECT id FROM users WHERE email = ?').get(email)) throw new HttpError(400, 'That email is already registered.');
+    const user: PublicUser = { id: id(), name, email, role: 'teacher' };
+    db.prepare('INSERT INTO users (id, email, password_hash, name, role, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      user.id, email, passwordHash, name, 'teacher', nowIso(),
+    );
+    return user;
+  });
+}
+
 export async function login(emailRaw: unknown, password: unknown): Promise<PublicUser> {
   const email = clean(emailRaw, 120).toLowerCase();
   const row = await withDb(() => db.prepare('SELECT id, email, password_hash, name, role FROM users WHERE email = ?').get(email) as UserRow | undefined);

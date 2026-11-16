@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Banner, Button, Field, controlClass } from '../components/ui';
+import { api } from '../lib/api';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -10,6 +11,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('demo1234');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [hasTeacher, setHasTeacher] = useState<boolean | null>(null);
+  useEffect(() => { api<{ hasTeacher: boolean }>('/api/auth/setup').then((result) => setHasTeacher(result.hasTeacher)).catch(() => setHasTeacher(true)); }, []);
 
   async function submit(nextEmail = email, nextPassword = password) {
     setBusy(true);
@@ -52,9 +55,7 @@ export function LoginPage() {
           Demo student · an.10a1@school.test
         </button>
       </div>
-      <p className="mt-4 text-sm font-bold">
-        New teacher? <Link className="text-[#315fbf]" to="/register">Create an account</Link>
-      </p>
+      {hasTeacher === false ? <p className="mt-4 text-sm font-bold">First teacher? <Link className="text-[#315fbf]" to="/register">Create the first account</Link></p> : null}
     </AuthCard>
   );
 }
@@ -67,6 +68,11 @@ export function RegisterPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [setupReady, setSetupReady] = useState(false);
+  const [hasTeacher, setHasTeacher] = useState(true);
+  useEffect(() => { api<{ hasTeacher: boolean }>('/api/auth/setup').then((result) => setHasTeacher(result.hasTeacher)).catch(() => setHasTeacher(true)).finally(() => setSetupReady(true)); }, []);
+  if (!setupReady) return <AuthCard title="Checking setup" subtitle="Please wait…"><p className="font-bold text-slate-500">Loading account setup.</p></AuthCard>;
+  if (hasTeacher) return <AuthCard title="Registration closed" subtitle="Teacher accounts are managed by the first teacher."><Banner tone="error">A teacher account already exists. Ask the first teacher to create an account for you.</Banner><p className="mt-4 text-sm font-bold"><Link className="text-[#315fbf]" to="/login">Back to log in</Link></p></AuthCard>;
 
   return (
     <AuthCard title="Teacher sign up" subtitle="Student accounts are created inside a class.">

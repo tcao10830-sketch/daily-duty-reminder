@@ -71,6 +71,15 @@ function requireUser(user: store.PublicUser | null, role?: store.Role): store.Pu
 async function dispatch(method: string, path: string, body: Record<string, unknown>, user: store.PublicUser | null) {
   const routes: { method: string; pattern: string; run: (params: Record<string, string>) => Promise<unknown> }[] = [
     { method: 'POST', pattern: '/api/auth/register', run: async () => ({ user: await store.registerTeacher(body), token: '' }) },
+    { method: 'GET', pattern: '/api/auth/setup', run: async () => store.authSetup() },
+    { method: 'GET', pattern: '/api/teacher/permissions', run: async () => {
+      const teacher = requireUser(user, 'teacher');
+      return { canManageTeachers: await store.isPrimaryTeacher(teacher.id) };
+    } },
+    { method: 'POST', pattern: '/api/teacher/teachers', run: async () => {
+      const teacher = requireUser(user, 'teacher');
+      return { user: await store.registerAdditionalTeacher(teacher.id, body) };
+    } },
     { method: 'POST', pattern: '/api/auth/login', run: async () => {
       const account = await store.login(body.email, body.password);
       return { user: account, token: signToken({ sub: account.id, role: account.role }, jwtSecret) };
