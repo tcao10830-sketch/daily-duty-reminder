@@ -65,7 +65,7 @@ type StudentRow = {
   assigned: number;
   completed: number;
   pending: number;
-  quá hạn: number;
+  overdue: number;
   completionRate: number;
 };
 
