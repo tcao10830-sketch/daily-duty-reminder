@@ -7,6 +7,7 @@ import { useQuery } from '../lib/query';
 type Submission = {
   id: string;
   file_name: string;
+  files?: { file_name: string; signedUrl: string | null }[];
   signedUrl: string | null;
   link_url: string | null;
   comment: string;
@@ -46,9 +47,13 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
     <div className="min-w-[220px] space-y-2">
       {items.length === 0 ? <span className="text-xs font-semibold text-slate-400">No submission yet</span> : items.map((item) => (
         <div key={item.id} className="rounded-xl bg-[#f7f9fc] p-2">
-          <a className="break-all text-sm font-extrabold text-[#315fc4] underline" href={item.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">
-            {item.file_name}
-          </a>
+          <div className="grid gap-1">
+            {(item.files?.length ? item.files : [{ file_name: item.file_name, signedUrl: item.signedUrl }]).map((file, index) => (
+              <a key={`${file.file_name}-${index}`} className="break-all text-sm font-extrabold text-[#315fc4] underline" href={file.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">
+                {file.file_name}
+              </a>
+            ))}
+          </div>
           <p className="mt-1 text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</p>
           {item.comment ? <p className="mt-1 text-xs">{item.comment}</p> : null}
           {item.review ? (

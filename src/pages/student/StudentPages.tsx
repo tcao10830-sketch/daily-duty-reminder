@@ -132,9 +132,9 @@ export function StudentTaskPage() {
   const { id = '' } = useParams();
   const { data, error, loading } = useQuery<{ assignment: AssignmentCard }>(`/api/student/tasks/${id}`);
   const materials = useQuery<{ materials: { id: string; file_name: string; signedUrl: string | null; link_url: string | null }[] }>(`/api/student/tasks/${id}/materials`);
-  const submissions = useQuery<{ submissions: { id: string; file_name: string; signedUrl: string | null; link_url: string | null; comment: string; created_at: string; review: { status: 'approved' | 'revision_requested'; feedback: string; created_at: string } | null }[] }>(`/api/student/assignments/${id}/submissions`);
+  const submissions = useQuery<{ submissions: { id: string; file_name: string; files?: { file_name: string; signedUrl: string | null }[]; signedUrl: string | null; link_url: string | null; comment: string; created_at: string; review: { status: 'approved' | 'revision_requested'; feedback: string; created_at: string } | null }[] }>(`/api/student/assignments/${id}/submissions`);
   const { bump } = useAuth();
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [link, setLink] = useState('');
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
@@ -152,14 +152,16 @@ export function StudentTaskPage() {
     setFormError('');
     setMessage('');
     try {
+      const totalBytes = files.reduce((sum, item) => sum + item.size, 0);
+      if (totalBytes > 10 * 1024 * 1024) throw new Error('All files together must be 10 MB or smaller.');
       const payload: Record<string, unknown> = { linkUrl: link.trim(), comment };
-      if (file) Object.assign(payload, await fileUploadPayload(file));
-      if (!file && !link.trim()) throw new Error('Choose a file or add a link before submitting.');
+      if (files.length) payload.files = await Promise.all(files.map((item) => fileUploadPayload(item)));
+      if (!files.length && !link.trim()) throw new Error('Choose one or more files or add a link before submitting.');
       await api(`/api/student/assignments/${task.assignmentId}/submissions`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      setFile(null);
+      setFiles([]);
       setLink('');
       setComment('');
       setMessage('Your work has been submitted. It will be marked complete after your teacher approves it.');
@@ -218,7 +220,12 @@ export function StudentTaskPage() {
         <h2 className="mb-3 text-lg font-extrabold">Your submission</h2>
         {latest ? (
           <div className="mb-4 rounded-2xl bg-[#f4f8ff] p-3">
-            <p className="font-extrabold">Latest: {latest.file_name}</p>
+            <p className="font-extrabold">Latest submission</p>
+            <div className="mt-1 grid gap-1">
+              {(latest.files?.length ? latest.files : [{ file_name: latest.file_name, signedUrl: latest.signedUrl }]).map((item, index) => (
+                <a key={`${item.file_name}-${index}`} className="break-all text-sm font-bold text-[#315fc4] underline" href={item.signedUrl || latest.link_url || '#'} target="_blank" rel="noreferrer">{item.file_name}</a>
+              ))}
+            </div>
             <p className="text-xs font-semibold text-slate-500">{formatStamp(latest.created_at)}</p>
             {latest.review ? (
               <div className={`mt-2 rounded-xl p-3 font-bold ${latest.review.status === 'approved' ? 'bg-[#D8F6E4] text-green-800' : 'bg-[#FFE0C2] text-orange-900'}`}>
@@ -231,8 +238,19 @@ export function StudentTaskPage() {
 
         {!done ? (
           <form className="grid gap-3" onSubmit={(event) => void submitWork(event)}>
-            <Field label="Upload a file (PDF, Word or image — max 10 MB)">
-              <input className={controlClass} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+            <Field label="Upload files or photos (PDF, Word or images — 10 MB total)">
+              <input className={controlClass} type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} />
+              {files.length > 0 ? (
+                <div className="mt-2 grid gap-1 rounded-xl bg-[#f4f8ff] p-2 text-sm">
+                  {files.map((item, index) => (
+                    <div key={`${item.name}-${index}`} className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 break-all">{item.name} · {(item.size / 1024 / 1024).toFixed(2)} MB</span>
+                      <button type="button" className="shrink-0 font-extrabold text-red-600" onClick={() => setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))}>Remove</button>
+                    </div>
+                  ))}
+                  <p className="font-extrabold">Total: {(files.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024).toFixed(2)} / 10 MB</p>
+                </div>
+              ) : null}
             </Field>
             <Field label="Or paste a link">
               <input className={controlClass} type="url" value={link} onChange={(event) => setLink(event.target.value)} placeholder="https://..." />

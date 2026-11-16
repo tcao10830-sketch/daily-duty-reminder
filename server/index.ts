@@ -120,8 +120,9 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     } },
     { method: 'POST', pattern: '/api/student/assignments/:id/submissions', run: async (params) => {
       const student = requireUser(user, 'student');
-      await store.studentTask(student.id, params.id);
-      return { submission: await cloud.createSubmission(params.id, student.id, body) };
+      const assignment = await store.studentTask(student.id, params.id);
+      const expiresAt = new Date(new Date(assignment.deadlineAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      return { submission: await cloud.createSubmission(params.id, student.id, body, expiresAt) };
     } },
     { method: 'GET', pattern: '/api/teacher/assignments/:id/submissions', run: async (params) => {
       const teacher = requireUser(user, 'teacher');
@@ -188,6 +189,15 @@ if (dev || process.env.SEED_DEMO === '1') await seed();
 setInterval(() => {
   sweepDeadlines().catch((error) => console.error(error));
 }, 60_000);
+
+// Run cloud-file retention cleanup on startup and periodically.
+// On Render's free plan the service may sleep; startup cleanup catches up after it wakes.
+cloud.cleanupExpiredSubmissions().then((count) => {
+  if (count) console.log(`Removed ${count} expired student submission(s).`);
+}).catch((error) => console.error('Submission cleanup failed:', error));
+setInterval(() => {
+  cloud.cleanupExpiredSubmissions().catch((error) => console.error('Submission cleanup failed:', error));
+}, 6 * 60 * 60 * 1000);
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://127.0.0.1');

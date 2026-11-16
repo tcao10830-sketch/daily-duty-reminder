@@ -72,3 +72,12 @@ on conflict (id) do update
 set public = false,
     file_size_limit = excluded.file_size_limit,
     allowed_mime_types = excluded.allowed_mime_types;
+
+
+-- Student submissions expire 30 days after the assignment deadline.
+alter table public.assignment_submissions
+  add column if not exists expires_at timestamptz;
+
+create index if not exists assignment_submissions_expires_idx
+  on public.assignment_submissions(expires_at)
+  where expires_at is not null;
