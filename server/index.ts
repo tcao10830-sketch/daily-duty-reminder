@@ -8,6 +8,8 @@ import { subscribe } from './events.ts';
 import { seed } from './seed.ts';
 import { sweepDeadlines } from './store.ts';
 import * as store from './store.ts';
+import * as cloud from './supabase.ts';
+import { getTeacherAssignment } from './access.ts';
 
 const port = Number(process.env.PORT ?? 8787);
 const dev = process.env.DEV === '1';
@@ -28,7 +30,7 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     size += buffer.length;
-    if (size > 1_000_000) throw new HttpError(413, 'Request is too large.');
+    if (size > 15_000_000) throw new HttpError(413, 'Request is too large. Each uploaded file must be 10 MB or smaller.');
     chunks.push(buffer);
   }
   if (!chunks.length) return {};
@@ -89,6 +91,15 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'GET', pattern: '/api/teacher/tasks', run: async () => ({ tasks: await store.listTeacherTasks(requireUser(user, 'teacher').id) }) },
     { method: 'POST', pattern: '/api/teacher/tasks', run: async () => ({ tasks: await store.createTask(requireUser(user, 'teacher').id, { ...body, studentIds: undefined }) }) },
     { method: 'GET', pattern: '/api/teacher/tasks/:id', run: async (params) => store.getTeacherTask(requireUser(user, 'teacher').id, params.id) },
+    { method: 'GET', pattern: '/api/teacher/tasks/:id/materials', run: async (params) => {
+      await store.getTeacherTask(requireUser(user, 'teacher').id, params.id);
+      return { materials: await cloud.listMaterials(params.id) };
+    } },
+    { method: 'POST', pattern: '/api/teacher/tasks/:id/materials', run: async (params) => {
+      const teacher = requireUser(user, 'teacher');
+      await store.getTeacherTask(teacher.id, params.id);
+      return { material: await cloud.createMaterial(params.id, teacher.id, body) };
+    } },
     { method: 'PATCH', pattern: '/api/teacher/tasks/:id', run: async (params) => store.updateTask(requireUser(user, 'teacher').id, params.id, body) },
     { method: 'POST', pattern: '/api/teacher/tasks/:id/duplicate', run: async (params) => ({ tasks: await store.duplicateTask(requireUser(user, 'teacher').id, params.id) }) },
     { method: 'POST', pattern: '/api/teacher/tasks/:id/cancel', run: async (params) => ({ task: await store.cancelTask(requireUser(user, 'teacher').id, params.id) }) },
@@ -97,6 +108,38 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'GET', pattern: '/api/student/overview', run: async () => store.studentOverview(requireUser(user, 'student').id) },
     { method: 'GET', pattern: '/api/student/tasks', run: async () => ({ assignments: await store.studentTasks(requireUser(user, 'student').id) }) },
     { method: 'GET', pattern: '/api/student/tasks/:id', run: async (params) => ({ assignment: await store.studentTask(requireUser(user, 'student').id, params.id) }) },
+    { method: 'GET', pattern: '/api/student/tasks/:id/materials', run: async (params) => {
+      const student = requireUser(user, 'student');
+      const assignment = await store.studentTask(student.id, params.id);
+      return { materials: await cloud.listMaterials(assignment.taskId) };
+    } },
+    { method: 'GET', pattern: '/api/student/assignments/:id/submissions', run: async (params) => {
+      const student = requireUser(user, 'student');
+      await store.studentTask(student.id, params.id);
+      return { submissions: await cloud.listSubmissions(params.id, student.id) };
+    } },
+    { method: 'POST', pattern: '/api/student/assignments/:id/submissions', run: async (params) => {
+      const student = requireUser(user, 'student');
+      await store.studentTask(student.id, params.id);
+      return { submission: await cloud.createSubmission(params.id, student.id, body) };
+    } },
+    { method: 'GET', pattern: '/api/teacher/assignments/:id/submissions', run: async (params) => {
+      const teacher = requireUser(user, 'teacher');
+      const assignment = await getTeacherAssignment(teacher.id, params.id);
+      return { submissions: await cloud.listSubmissions(assignment.assignmentId) };
+    } },
+    { method: 'POST', pattern: '/api/teacher/submissions/:id/review', run: async (params) => {
+      const teacher = requireUser(user, 'teacher');
+      const submission = await cloud.getSubmission(params.id);
+      const assignment = await getTeacherAssignment(teacher.id, submission.assignment_id);
+      const status = String(body.status);
+      if (status !== 'approved' && status !== 'revision_requested') throw new HttpError(400, 'Choose approve or request changes.');
+      const review = await cloud.reviewSubmission(params.id, teacher.id, status, String(body.feedback || ''));
+      if (status === 'approved') {
+        await store.completeAssignmentAt(assignment.studentId, assignment.assignmentId, new Date().toISOString());
+      }
+      return { review };
+    } },
     { method: 'POST', pattern: '/api/student/assignments/:id/complete', run: async (params) => ({ assignment: await store.completeAssignment(requireUser(user, 'student').id, params.id) }) },
     { method: 'POST', pattern: '/api/student/assignments/:id/start', run: async (params) => ({ assignment: await store.startAssignment(requireUser(user, 'student').id, params.id) }) },
     { method: 'GET', pattern: '/api/notifications', run: async () => store.listNotifications(requireUser(user).id) },
