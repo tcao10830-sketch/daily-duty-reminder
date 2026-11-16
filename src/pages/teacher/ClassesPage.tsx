@@ -49,8 +49,8 @@ export function ClassesPage() {
         {data?.classes.map((item) => (
           <Link key={item.id} to={`/teacher/classes/${item.id}`} className="rounded-3xl bg-white p-4 shadow-sm">
             <h2 className="text-2xl font-extrabold">{item.name}</h2>
-            <p className="font-bold text-slate-500">{item.studentCount} students</p>
-            <p className="mt-2 font-extrabold text-[#067a4b]">{item.completionRate}% complete</p>
+            <p className="font-bold text-slate-500">{item.studentCount} học sinh</p>
+            <p className="mt-2 font-extrabold text-[#067a4b]">{item.completionRate}% hoàn thành</p>
           </Link>
         ))}
       </div>
@@ -138,7 +138,7 @@ export function ClassPage() {
       >
         <Field label="Tên học sinh"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
         <Field label="Email"><input className={controlClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
-        <Field label="Password"><input className={controlClass} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} /></Field>
+        <Field label="Mật khẩu"><input className={controlClass} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} /></Field>
         <div className="self-end"><Button type="submit">Thêm học sinh</Button></div>
       </form>
       <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
