@@ -2,26 +2,26 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StickyNote } from '../../components/StickyNote';
 import { TaskForm, emptyTaskForm, type TaskFormValues } from '../../components/TaskForm';
-import { Banner, Button, Empty, Loading, Trạng tháiPill } from '../../components/ui';
+import { Banner, Button, Empty, Loading, StatusPill } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { fileUploadPayload } from '../../lib/fileUpload';
 import { SubmissionReview } from '../../components/SubmissionReview';
 import { api } from '../../lib/api';
 import { formatStamp } from '../../lib/format';
 import { useQuery } from '../../lib/query';
-import type { AssignmentCard, ClassSummary, CompletionTrạng thái, TaskSummary } from '../../types';
+import type { AssignmentCard, ClassSummary, CompletionStatus, TaskSummary } from '../../types';
 
 export function TasksPage() {
   const { data, error, loading } = useQuery<{ tasks: TaskSummary[] }>('/api/teacher/tasks');
-  const [showĐã hủy, setShowĐã hủy] = useState(false);
-  const tasks = (data?.tasks ?? []).filter((task) => showĐã hủy || task.taskTrạng thái === 'active');
+  const [showCancelled, setShowCancelled] = useState(false);
+  const tasks = (data?.tasks ?? []).filter((task) => showCancelled || task.taskStatus === 'active');
   if (loading && !data) return <Loading />;
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">Bảng nhiệm vụ</h1>
         <div className="flex gap-2">
-          <Button tone="ghost" onClick={() => setShowĐã hủy((value) => !value)}>{showĐã hủy ? 'Ẩn nhiệm vụ đã hủy' : 'Hiện nhiệm vụ đã hủy'}</Button>
+          <Button tone="ghost" onClick={() => setShowCancelled((value) => !value)}>{showCancelled ? 'Ẩn nhiệm vụ đã hủy' : 'Hiện nhiệm vụ đã hủy'}</Button>
           <Link to="/teacher/tasks/new" className="rounded-2xl bg-[#FF914D] px-4 py-2.5 font-extrabold text-white">Nhiệm vụ mới</Link>
         </div>
       </div>
@@ -44,7 +44,7 @@ export function TasksPage() {
               priority={task.priority}
               penalty={task.penalty}
               color={task.color}
-              footer={task.taskTrạng thái === 'cancelled' ? 'Đã hủy' : `${task.completionRate}% · ${task.completedCount}/${task.assignedCount}`}
+              footer={task.taskStatus === 'cancelled' ? 'Đã hủy' : `${task.completionRate}% · ${task.completedCount}/${task.assignedCount}`}
             />
           ))}
         </div>
@@ -87,7 +87,7 @@ export function NewTaskPage() {
   );
 }
 
-export function TaskChỉnh sửaPage() {
+export function TaskEditPage() {
   const { id = '' } = useParams();
   const detail = useQuery<{ task: TaskSummary; assignments: AssignmentCard[] }>(`/api/teacher/tasks/${id}`);
   const classes = useQuery<{ classes: ClassSummary[] }>('/api/teacher/classes');
@@ -151,7 +151,7 @@ export function TaskDetailPage() {
   const [materialError, setMaterialError] = useState('');
   const { bump } = useAuth();
   const navigate = useNavigate();
-  const [filter, setFilter] = useState<'all' | CompletionTrạng thái>('all');
+  const [filter, setFilter] = useState<'all' | CompletionStatus>('all');
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
   if (loading && !data) return <Loading />;
@@ -205,9 +205,9 @@ export function TaskDetailPage() {
         priority={data.task.priority}
         penalty={data.task.penalty}
         color={data.task.color}
-        footer={`${data.task.completionRate}% hoàn thành`}
+        footer={`${data.task.completionRate}% complete`}
       />
-      {data.task.instructions ? <p className="rounded-3xl bg-white p-4 font-bold shadow-sm">Hướng dẫn: {data.task.instructions}</p> : null}
+      {data.task.instructions ? <p className="rounded-3xl bg-white p-4 font-bold shadow-sm" >Hướng dẫn: {data.task.instructions}</p> : null}
       <section className="rounded-3xl bg-white p-4 shadow-sm">
         <h2 className="mb-3 text-lg font-extrabold">Tài liệu dành cho học sinh</h2>
         {(materials.data?.materials ?? []).length > 0 ? (
@@ -224,7 +224,7 @@ export function TaskDetailPage() {
           <input className="rounded-xl border p-2 text-sm" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setMaterialFile(event.target.files?.[0] ?? null)} />
           <input className="rounded-xl border p-2 text-sm sm:col-span-2" type="url" value={materialLink} onChange={(event) => setMaterialLink(event.target.value)} placeholder="Hoặc dán đường dẫn tài liệu https://..." />
           {materialError ? <div className="sm:col-span-2"><Banner tone="error">{materialError}</Banner></div> : null}
-          <div className="sm:col-span-2"><Button type="submit" disabled={materialBusy}>{materialBusy ? 'Đang tải tệp lên…' : 'Đính kèm tài liệu'}</Button></div>
+          <div className="sm:col-span-2"><Button type="submit" disabled={materialBusy}>{materialBusy ? 'Đang tải tệp lên…' : 'Attach material'}</Button></div>
         </form>
         <p className="mt-2 text-xs font-semibold text-slate-400">Hỗ trợ PDF, Word và hình ảnh · tối đa 10 MB mỗi tệp.</p>
       </section>
@@ -241,8 +241,8 @@ export function TaskDetailPage() {
       {formError ? <Banner tone="error">{formError}</Banner> : null}
       <div className="rounded-3xl bg-white p-4 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-xl font-extrabold">{data.task.completedCount}/{data.task.assignedCount} students hoàn thànhd · {data.task.completionRate}%</h2>
-          <select className="rounded-2xl border px-3 py-2 font-bold" value={filter} onChange={(event) => setFilter(event.target.value as 'all' | CompletionTrạng thái)}>
+          <h2 className="text-xl font-extrabold">{data.task.completedCount}/{data.task.assignedCount} học sinh đã hoàn thành · {data.task.completionRate}%</h2>
+          <select className="rounded-2xl border px-3 py-2 font-bold" value={filter} onChange={(event) => setFilter(event.target.value as 'all' | CompletionStatus)}>
             <option value="all">Tất cả</option>
             <option value="pending">Chưa hoàn thành</option>
             <option value="on_time">Đã hoàn thành đúng hạn</option>
@@ -259,7 +259,7 @@ export function TaskDetailPage() {
               {rows.map((row) => (
                 <tr key={row.assignmentId} className="border-t border-[#eef3f8]">
                   <td className="p-2 font-extrabold"><Link to={`/teacher/progress/${row.studentId}`}>{row.studentName}</Link></td>
-                  <td className="p-2"><Trạng tháiPill status={row.status} /></td>
+                  <td className="p-2"><StatusPill status={row.status} /></td>
                   <td className="p-2 font-bold">{row.completedAt ? formatStamp(row.completedAt) : '—'}</td>
                   <td className="p-2"><SubmissionReview assignmentId={row.assignmentId} /></td>
                   <td className="p-2">
