@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #24324a;
+  font-family: "Nunito", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(79, 135, 255, 0.16) 1px, transparent 0) 0 0 / 22px 22px,
+    linear-gradient(165deg, #fff8e8 0%, #dff4ff 100%);
+}
+
+button, input, select, textarea { font-family: inherit; }
+
+.font-display { font-family: "Coiny", "Nunito", cursive; }
+
+.note-pin {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #fff, #ef5b68 46%, #b42333);
+  box-shadow: 0 2px 0 #9f1239;
+}
+
+.note-clip {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 14px;
+  height: 28px;
+  border: 3px solid #4f87ff;
+  border-radius: 8px;
+  opacity: 0.55;
+}
