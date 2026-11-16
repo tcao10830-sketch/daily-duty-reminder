@@ -37,7 +37,7 @@ export function ProgressPage() {
               <h2 className="text-xl font-extrabold">{item.name}</h2>
               <Ring value={item.completionRate} />
             </div>
-            <p className="font-bold text-slate-500">{item.completedCount} completed · {item.pendingCount} pending · {item.overdueCount} overdue</p>
+            <p className="font-bold text-slate-500">{item.completedCount} đã hoàn thành · {item.pendingCount} đang chờ · {item.overdueCount} quá hạn</p>
           </Link>
         ))}
       </section>
@@ -47,7 +47,7 @@ export function ProgressPage() {
           {tasks.map((task) => (
             <Link key={task.id} to={`/teacher/tasks/${task.id}`} className="flex items-center justify-between rounded-2xl bg-[#f7fbff] px-3 py-2 font-extrabold">
               <span>{task.title} · {task.className}</span>
-              <span>{task.completedCount}/{task.assignedCount} · {task.completionRate}%</span>
+              <span>{task.completedCount}/{task.assignedCount} · {task.completionRate}% hoàn thành</span>
             </Link>
           ))}
           {tasks.length === 0 ? <Empty>Không có nhiệm vụ đang hoạt động.</Empty> : null}
@@ -73,7 +73,7 @@ export function StudentProgressPage() {
         <div>
           <h1 className="text-2xl font-extrabold">{data.student.name}</h1>
           <p className="font-bold text-slate-500">{data.student.class_name} · {data.student.email}</p>
-          <p className="mt-2 font-bold">{data.stats.completed} completed · {data.stats.pending} pending · {data.stats.overdue} overdue</p>
+          <p className="mt-2 font-bold">{data.stats.completed} đã hoàn thành · {data.stats.pending} đang chờ · {data.stats.overdue} quá hạn</p>
         </div>
         <Ring value={data.stats.completionRate} />
       </section>
@@ -213,7 +213,7 @@ export function SettingsPage() {
           <Field label="Tên giáo viên"><input className={controlClass} value={teacherName} onChange={(event) => setTeacherName(event.target.value)} required /></Field>
           <Field label="Email giáo viên"><input className={controlClass} type="email" value={teacherEmail} onChange={(event) => setTeacherEmail(event.target.value)} required /></Field>
           <Field label="Mật khẩu tạm thời"><input className={controlClass} type="password" minLength={6} value={teacherPassword} onChange={(event) => setTeacherPassword(event.target.value)} required /></Field>
-          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Đang tạo…' : 'Create teacher account'}</Button>
+          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Đang tạo…' : 'Tạo tài khoản giáo viên'}</Button>
         </form>
       ) : null}
     </div>
