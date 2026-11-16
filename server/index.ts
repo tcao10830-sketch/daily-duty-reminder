@@ -142,7 +142,7 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, pathname: string
   void req;
 }
 
-await seed();
+if (dev || process.env.SEED_DEMO === '1') await seed();
 setInterval(() => {
   sweepDeadlines().catch((error) => console.error(error));
 }, 60_000);
