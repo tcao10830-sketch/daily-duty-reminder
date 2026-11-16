@@ -1,12 +1,14 @@
-import { useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarBoard } from '../../components/CalendarBoard';
 import { Mascot } from '../../components/Mascot';
+import { SubmissionCelebration } from '../../components/SubmissionCelebration';
 import { StickyNote } from '../../components/StickyNote';
 import { Banner, Button, Empty, Field, Loading, Modal, Ring, StatCard, StatusPill, WeekBars, controlClass } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import { fileUploadPayload } from '../../lib/fileUpload';
+import { playSubmissionCelebration } from '../../lib/sounds';
 import { formatLongDate, formatStamp, formatTime } from '../../lib/format';
 import { useQuery } from '../../lib/query';
 import type { AssignmentCard, NotificationItem, User, WeekPoint } from '../../types';
@@ -150,6 +152,8 @@ export function StudentTaskPage() {
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState('');
   const [message, setMessage] = useState('');
+  const [showCelebration, setShowCelebration] = useState(false);
+  const closeCelebration = useCallback(() => setShowCelebration(false), []);
   if (loading && !data) return <Loading />;
   if (!data) return <Banner tone="error">{error || 'Task not found.'}</Banner>;
   const task = data.assignment;
@@ -175,6 +179,8 @@ export function StudentTaskPage() {
       setLink('');
       setComment('');
       setMessage('Your work has been submitted. It will be marked complete after your teacher approves it.');
+      setShowCelebration(true);
+      playSubmissionCelebration();
       bump();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Could not submit your work.');
@@ -185,6 +191,7 @@ export function StudentTaskPage() {
 
   return (
     <div className="mx-auto grid max-w-2xl gap-4">
+      {showCelebration ? <SubmissionCelebration onDone={closeCelebration} /> : null}
       <StickyNote
         id={task.assignmentId}
         title={task.title}
