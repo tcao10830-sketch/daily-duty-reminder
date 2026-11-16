@@ -7,6 +7,8 @@ import { Banner, Button, Empty, Field, Loading, Modal, Ring, StatCard, StatusPil
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import { fileUploadPayload } from '../../lib/fileUpload';
+import { playSubmitSound } from '../../lib/sounds';
+import { CelebrationConfetti } from '../../components/CelebrationConfetti';
 import { formatLongDate, formatStamp, formatTime } from '../../lib/format';
 import { useQuery } from '../../lib/query';
 import type { AssignmentCard, NotificationItem, User, WeekPoint } from '../../types';
@@ -150,6 +152,7 @@ export function StudentTaskPage() {
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState('');
   const [message, setMessage] = useState('');
+  const [celebrating, setCelebrating] = useState(false);
   if (loading && !data) return <Loading />;
   if (!data) return <Banner tone="error">{error || 'Task not found.'}</Banner>;
   const task = data.assignment;
@@ -175,6 +178,9 @@ export function StudentTaskPage() {
       setLink('');
       setComment('');
       setMessage('Your work has been submitted. It will be marked complete after your teacher approves it.');
+      setCelebrating(true);
+      playSubmitSound();
+      window.setTimeout(() => setCelebrating(false), 3200);
       bump();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Could not submit your work.');
@@ -185,6 +191,7 @@ export function StudentTaskPage() {
 
   return (
     <div className="mx-auto grid max-w-2xl gap-4">
+      {celebrating ? <CelebrationConfetti /> : null}
       <StickyNote
         id={task.assignmentId}
         title={task.title}
