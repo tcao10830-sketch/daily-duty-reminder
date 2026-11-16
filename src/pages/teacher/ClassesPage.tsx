@@ -9,7 +9,7 @@ import { Banner, Button, Empty, Field, Loading, controlClass } from '../../compo
 export function ClassesPage() {
   const { data, error, loading } = useQuery<{ classes: ClassSummary[] }>('/api/teacher/classes');
   const { bump } = useAuth();
-  const [name, setName] = useState('');
+  const [name, setHọ tên] = useState('');
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
 
@@ -17,40 +17,40 @@ export function ClassesPage() {
     setFormError('');
     try {
       await api('/api/teacher/classes', { method: 'POST', body: JSON.stringify({ name }) });
-      setName('');
-      setMessage('Class created.');
+      setHọ tên('');
+      setMessage('Đã tạo lớp học.');
       bump();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not create the class.');
+      setFormError(err instanceof Error ? err.message : 'Không thể tạo lớp học.');
     }
   }
 
   if (loading && !data) return <Loading />;
   return (
-    <div className="grid gap-4">
+    <div classHọ tên="grid gap-4">
       <form
-        className="flex flex-wrap items-end gap-3 rounded-3xl bg-white p-4 shadow-sm"
+        classHọ tên="flex flex-wrap items-end gap-3 rounded-3xl bg-white p-4 shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
           void createClass();
         }}
       >
-        <div className="min-w-56 flex-1">
-          <Field label="New class">
-            <input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="10A1" required />
+        <div classHọ tên="min-w-56 flex-1">
+          <Field label="Lớp học mới">
+            <input classHọ tên={controlClass} value={name} onChange={(event) => setHọ tên(event.target.value)} placeholder="10A1" required />
           </Field>
         </div>
-        <Button type="submit">Create class</Button>
+        <Button type="submit">Tạo lớp</Button>
       </form>
       {message ? <Banner tone="ok">{message}</Banner> : null}
       {formError || error ? <Banner tone="error">{formError || error}</Banner> : null}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {data?.classes.length === 0 ? <Empty>No classes yet.</Empty> : null}
+      <div classHọ tên="grid gap-3 sm:grid-cols-2">
+        {data?.classes.length === 0 ? <Empty>Chưa có lớp học nào.</Empty> : null}
         {data?.classes.map((item) => (
-          <Link key={item.id} to={`/teacher/classes/${item.id}`} className="rounded-3xl bg-white p-4 shadow-sm">
-            <h2 className="text-2xl font-extrabold">{item.name}</h2>
-            <p className="font-bold text-slate-500">{item.studentCount} students</p>
-            <p className="mt-2 font-extrabold text-[#067a4b]">{item.completionRate}% complete</p>
+          <Link key={item.id} to={`/teacher/classes/${item.id}`} classHọ tên="rounded-3xl bg-white p-4 shadow-sm">
+            <h2 classHọ tên="text-2xl font-extrabold">{item.name}</h2>
+            <p classHọ tên="font-bold text-slate-500">{item.studentCount} học sinh</p>
+            <p classHọ tên="mt-2 font-extrabold text-[#067a4b]">{item.completionTỷ lệ}% hoàn thành</p>
           </Link>
         ))}
       </div>
@@ -58,27 +58,27 @@ export function ClassesPage() {
   );
 }
 
-type StudentRow = {
+type Học sinhRow = {
   id: string;
   name: string;
   email: string;
   assigned: number;
-  completed: number;
+  hoàn thànhd: number;
   pending: number;
-  overdue: number;
-  completionRate: number;
+  quá hạn: number;
+  completionTỷ lệ: number;
 };
 
 export function ClassPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { bump } = useAuth();
-  const { data, error, loading } = useQuery<{ class: ClassSummary; students: StudentRow[] }>(`/api/teacher/classes/${id}`);
-  const [name, setName] = useState('');
+  const { data, error, loading } = useQuery<{ class: ClassSummary; học sinh: Học sinhRow[] }>(`/api/teacher/classes/${id}`);
+  const [name, setHọ tên] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('demo1234');
-  const [editing, setEditing] = useState<StudentRow | null>(null);
-  const [className, setClassName] = useState('');
+  const [password, setMật khẩu] = useState('demo1234');
+  const [editing, setSửaing] = useState<Học sinhRow | null>(null);
+  const [classHọ tên, setClassHọ tên] = useState('');
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
 
@@ -88,96 +88,96 @@ export function ClassPage() {
       await action();
       bump();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Something went wrong.');
+      setFormError(err instanceof Error ? err.message : 'Đã xảy ra lỗi.');
     }
   }
 
   if (loading && !data) return <Loading />;
   if (error) return <Banner tone="error">{error}</Banner>;
   if (!data) return null;
-  const shownName = className || data.class.name;
+  const shownHọ tên = classHọ tên || data.class.name;
 
   return (
-    <div className="grid gap-4">
-      <div className="rounded-3xl bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-56 flex-1">
-            <Field label="Class name">
-              <input className={controlClass} value={shownName} onChange={(event) => setClassName(event.target.value)} />
+    <div classHọ tên="grid gap-4">
+      <div classHọ tên="rounded-3xl bg-white p-4 shadow-sm">
+        <div classHọ tên="flex flex-wrap items-end gap-3">
+          <div classHọ tên="min-w-56 flex-1">
+            <Field label="Tên lớp">
+              <input classHọ tên={controlClass} value={shownHọ tên} onChange={(event) => setClassHọ tên(event.target.value)} />
             </Field>
           </div>
-          <Button onClick={() => void run(async () => { await api(`/api/teacher/classes/${id}`, { method: 'PATCH', body: JSON.stringify({ name: shownName }) }); setMessage('Class renamed.'); })}>Rename</Button>
+          <Button onClick={() => void run(async () => { await api(`/api/teacher/classes/${id}`, { method: 'PATCH', body: JSON.stringify({ name: shownHọ tên }) }); setMessage('Đã đổi tên lớp.'); })}>Đổi tên</Button>
           <Button
             tone="red"
             onClick={() => {
-              if (!confirm(`Delete ${data.class.name}? Students in this class will lose access.`)) return;
+              if (!confirm(`Xóa ${data.class.name}? Học sinhs in this class will lose access.`)) return;
               void run(async () => {
                 await api(`/api/teacher/classes/${id}`, { method: 'DELETE' });
                 navigate('/teacher/classes');
               });
             }}
           >
-            Delete class
+            Xóa lớp
           </Button>
         </div>
-        <p className="mt-3 font-bold text-slate-500">{data.class.completedCount}/{data.class.assignedCount} assignments complete · {data.class.completionRate}%</p>
+        <p classHọ tên="mt-3 font-bold text-slate-500">{data.class.completedCount}/{data.class.assignedCount} assignments hoàn thành · {data.class.completionTỷ lệ}%</p>
       </div>
       {message ? <Banner tone="ok">{message}</Banner> : null}
       {formError ? <Banner tone="error">{formError}</Banner> : null}
       <form
-        className="grid gap-3 rounded-3xl bg-white p-4 shadow-sm sm:grid-cols-4"
+        classHọ tên="grid gap-3 rounded-3xl bg-white p-4 shadow-sm sm:grid-cols-4"
         onSubmit={(event) => {
           event.preventDefault();
           void run(async () => {
             await api(`/api/teacher/classes/${id}/students`, { method: 'POST', body: JSON.stringify({ name, email, password }) });
-            setName('');
+            setHọ tên('');
             setEmail('');
-            setMessage('Student added. They can log in with that email.');
+            setMessage('Đã thêm học sinh. Học sinh có thể đăng nhập bằng email này.');
           });
         }}
       >
-        <Field label="Student name"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
-        <Field label="Email"><input className={controlClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
-        <Field label="Password"><input className={controlClass} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} /></Field>
-        <div className="self-end"><Button type="submit">Add student</Button></div>
+        <Field label="Tên học sinh"><input classHọ tên={controlClass} value={name} onChange={(event) => setHọ tên(event.target.value)} required /></Field>
+        <Field label="Email"><input classHọ tên={controlClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
+        <Field label="Mật khẩu"><input classHọ tên={controlClass} value={password} onChange={(event) => setMật khẩu(event.target.value)} required minLength={6} /></Field>
+        <div classHọ tên="self-end"><Button type="submit">Thêm học sinh</Button></div>
       </form>
-      <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-[#f7fbff] font-extrabold">
+      <div classHọ tên="overflow-x-auto rounded-3xl bg-white shadow-sm">
+        <table classHọ tên="w-full min-w-[640px] text-left text-sm">
+          <thead classHọ tên="bg-[#f7fbff] font-extrabold">
             <tr>
-              <th className="p-3">Student</th>
-              <th className="p-3">Status mix</th>
-              <th className="p-3">Rate</th>
-              <th className="p-3"></th>
+              <th classHọ tên="p-3">Học sinh</th>
+              <th classHọ tên="p-3">Tình trạng</th>
+              <th classHọ tên="p-3">Tỷ lệ</th>
+              <th classHọ tên="p-3"></th>
             </tr>
           </thead>
           <tbody>
             {data.students.map((student) => (
-              <tr key={student.id} className="border-t border-[#eef3f8]">
-                <td className="p-3">
-                  <Link className="font-extrabold text-[#315fbf]" to={`/teacher/progress/${student.id}`}>{student.name}</Link>
-                  <div className="text-slate-500">{student.email}</div>
+              <tr key={student.id} classHọ tên="border-t border-[#eef3f8]">
+                <td classHọ tên="p-3">
+                  <Link classHọ tên="font-extrabold text-[#315fbf]" to={`/teacher/progress/${student.id}`}>{student.name}</Link>
+                  <div classHọ tên="text-slate-500">{student.email}</div>
                 </td>
-                <td className="p-3 font-bold">{student.completed} done · {student.pending} pending · {student.overdue} overdue</td>
-                <td className="p-3 font-extrabold">{student.completionRate}%</td>
-                <td className="p-3">
-                  <div className="flex gap-2">
-                    <Button tone="ghost" onClick={() => setEditing(student)}>Edit</Button>
+                <td classHọ tên="p-3 font-bold">{student.completed} hoàn thành · {student.pending} đang chờ · {student.overdue} quá hạn</td>
+                <td classHọ tên="p-3 font-extrabold">{student.completionTỷ lệ}%</td>
+                <td classHọ tên="p-3">
+                  <div classHọ tên="flex gap-2">
+                    <Button tone="ghost" onClick={() => setSửaing(student)}>Sửa</Button>
                     <Button tone="red" onClick={() => {
-                      if (!confirm(`Remove ${student.name}?`)) return;
-                      void run(async () => { await api(`/api/teacher/students/${student.id}`, { method: 'DELETE' }); setMessage('Student removed.'); });
-                    }}>Remove</Button>
+                      if (!confirm(`Xóa ${student.name}?`)) return;
+                      void run(async () => { await api(`/api/teacher/students/${student.id}`, { method: 'DELETE' }); setMessage('Học sinh removed.'); });
+                    }}>Xóa</Button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {data.students.length === 0 ? <Empty>Add a student to this class.</Empty> : null}
+        {data.students.length === 0 ? <Empty>Thêm học sinh vào lớp này.</Empty> : null}
       </div>
       {editing ? (
         <form
-          className="grid gap-3 rounded-3xl bg-[#FFF8E8] p-4 sm:grid-cols-4"
+          classHọ tên="grid gap-3 rounded-3xl bg-[#FFF8E8] p-4 sm:grid-cols-4"
           onSubmit={(event) => {
             event.preventDefault();
             const form = new FormData(event.currentTarget);
@@ -186,17 +186,17 @@ export function ClassPage() {
                 method: 'PATCH',
                 body: JSON.stringify({ name: form.get('name'), email: form.get('email'), password: form.get('password') }),
               });
-              setEditing(null);
-              setMessage('Student updated.');
+              setSửaing(null);
+              setMessage('Học sinh updated.');
             });
           }}
         >
-          <Field label="Name"><input name="name" className={controlClass} defaultValue={editing.name} required /></Field>
-          <Field label="Email"><input name="email" className={controlClass} defaultValue={editing.email} required /></Field>
-          <Field label="New password (optional)"><input name="password" className={controlClass} placeholder="Leave blank to keep" /></Field>
-          <div className="flex items-end gap-2">
-            <Button type="submit">Save</Button>
-            <Button tone="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+          <Field label="Họ tên"><input name="name" classHọ tên={controlClass} defaultValue={editing.name} required /></Field>
+          <Field label="Email"><input name="email" classHọ tên={controlClass} defaultValue={editing.email} required /></Field>
+          <Field label="Mật khẩu mới (không bắt buộc)"><input name="password" classHọ tên={controlClass} placeholder="Để trống nếu muốn giữ mật khẩu cũ" /></Field>
+          <div classHọ tên="flex items-end gap-2">
+            <Button type="submit">Lưu</Button>
+            <Button tone="ghost" onClick={() => setSửaing(null)}>Hủy</Button>
           </div>
         </form>
       ) : null}
