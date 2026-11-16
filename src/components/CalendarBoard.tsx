@@ -28,14 +28,14 @@ export function CalendarBoard({ items }: { items: { date: string; title: string;
           Tháng trước
         </button>
         <h2 className="font-extrabold">
-          {new Date(Date.UTC(year, month - 1, 1)).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })}
+          {new Date(Date.UTC(year, month - 1, 1)).toLocaleString('vi-VN', { month: 'long', year: 'numeric', timeZone: 'UTC' })}
         </h2>
         <button type="button" className="rounded-full bg-[#eef4ff] px-3 py-1 font-extrabold" onClick={() => shift(1)}>
           Tháng sau
         </button>
       </div>
       <div className="grid grid-cols-7 gap-2 text-center text-xs font-extrabold text-slate-500">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+        {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((day) => (
           <div key={day}>{day}</div>
         ))}
       </div>
