@@ -1,0 +1,73 @@
+import { useState } from 'react';
+import { Banner, Button, Empty, Loading } from './ui';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
+import { useQuery } from '../lib/query';
+
+type Submission = {
+  id: string;
+  file_name: string;
+  signedUrl: string | null;
+  link_url: string | null;
+  comment: string;
+  created_at: string;
+  review: { status: 'approved' | 'revision_requested'; feedback: string; created_at: string } | null;
+};
+
+export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
+  const { data, error, loading } = useQuery<{ submissions: Submission[] }>(`/api/teacher/assignments/${assignmentId}/submissions`);
+  const { bump } = useAuth();
+  const [feedback, setFeedback] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  if (loading && !data) return <Loading />;
+  if (error) return <Banner tone="error">{error}</Banner>;
+  const items = data?.submissions ?? [];
+
+  async function review(submissionId: string, status: 'approved' | 'revision_requested') {
+    setBusy(true);
+    setMessage('');
+    try {
+      await api(`/api/teacher/submissions/${submissionId}/review`, {
+        method: 'POST',
+        body: JSON.stringify({ status, feedback }),
+      });
+      setFeedback('');
+      setMessage(status === 'approved' ? 'Submission approved.' : 'Revision requested.');
+      bump();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Could not save review.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="min-w-[220px] space-y-2">
+      {items.length === 0 ? <span className="text-xs font-semibold text-slate-400">No submission yet</span> : items.map((item) => (
+        <div key={item.id} className="rounded-xl bg-[#f7f9fc] p-2">
+          <a className="break-all text-sm font-extrabold text-[#315fc4] underline" href={item.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">
+            {item.file_name}
+          </a>
+          <p className="mt-1 text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</p>
+          {item.comment ? <p className="mt-1 text-xs">{item.comment}</p> : null}
+          {item.review ? (
+            <p className={`mt-1 text-xs font-extrabold ${item.review.status === 'approved' ? 'text-green-700' : 'text-orange-700'}`}>
+              {item.review.status === 'approved' ? 'Approved' : 'Revision requested'}{item.review.feedback ? `: ${item.review.feedback}` : ''}
+            </p>
+          ) : (
+            <div className="mt-2 space-y-2">
+              <textarea className="w-full rounded-lg border p-2 text-xs" rows={2} placeholder="Feedback (optional)" value={feedback} onChange={(event) => setFeedback(event.target.value)} />
+              <div className="flex flex-wrap gap-1">
+                <Button tone="green" disabled={busy} onClick={() => void review(item.id, 'approved')}>Approve</Button>
+                <Button tone="orange" disabled={busy} onClick={() => void review(item.id, 'revision_requested')}>Request revision</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      {message ? <p className="text-xs font-bold text-slate-600">{message}</p> : null}
+      {items.length > 0 && items.every((item) => item.review?.status === 'approved') ? <Empty>All submitted work approved.</Empty> : null}
+    </div>
+  );
+}

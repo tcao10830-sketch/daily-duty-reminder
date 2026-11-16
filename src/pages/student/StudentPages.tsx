@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarBoard } from '../../components/CalendarBoard';
 import { StickyNote } from '../../components/StickyNote';
 import { Banner, Button, Empty, Field, Loading, Modal, Ring, StatCard, StatusPill, WeekBars, controlClass } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
+import { fileUploadPayload } from '../../lib/fileUpload';
 import { formatLongDate, formatStamp, formatTime } from '../../lib/format';
 import { useQuery } from '../../lib/query';
 import type { AssignmentCard, NotificationItem, User, WeekPoint } from '../../types';
@@ -130,24 +131,41 @@ export function MyTasksPage() {
 export function StudentTaskPage() {
   const { id = '' } = useParams();
   const { data, error, loading } = useQuery<{ assignment: AssignmentCard }>(`/api/student/tasks/${id}`);
+  const materials = useQuery<{ materials: { id: string; file_name: string; signedUrl: string | null; link_url: string | null }[] }>(`/api/student/tasks/${id}/materials`);
+  const submissions = useQuery<{ submissions: { id: string; file_name: string; signedUrl: string | null; link_url: string | null; comment: string; created_at: string; review: { status: 'approved' | 'revision_requested'; feedback: string; created_at: string } | null }[] }>(`/api/student/assignments/${id}/submissions`);
   const { bump } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [link, setLink] = useState('');
+  const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState('');
+  const [message, setMessage] = useState('');
   if (loading && !data) return <Loading />;
   if (!data) return <Banner tone="error">{error || 'Task not found.'}</Banner>;
   const task = data.assignment;
   const done = task.status === 'on_time' || task.status === 'late';
+  const latest = submissions.data?.submissions?.[0];
 
-  async function complete() {
+  async function submitWork(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setBusy(true);
     setFormError('');
+    setMessage('');
     try {
-      await api(`/api/student/assignments/${task.assignmentId}/complete`, { method: 'POST' });
-      setOpen(false);
+      const payload: Record<string, unknown> = { linkUrl: link.trim(), comment };
+      if (file) Object.assign(payload, await fileUploadPayload(file));
+      if (!file && !link.trim()) throw new Error('Choose a file or add a link before submitting.');
+      await api(`/api/student/assignments/${task.assignmentId}/submissions`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setFile(null);
+      setLink('');
+      setComment('');
+      setMessage('Your work has been submitted. It will be marked complete after your teacher approves it.');
       bump();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not save completion.');
+      setFormError(err instanceof Error ? err.message : 'Could not submit your work.');
     } finally {
       setBusy(false);
     }
@@ -176,34 +194,58 @@ export function StudentTaskPage() {
         <div className="mt-4"><StatusPill status={task.status} /></div>
         {done && task.completedAt ? (
           <p className="mt-4 font-extrabold text-[#067a4b]" data-testid="completed-stamp">
-            {STATUS_LABEL[task.status]} · {formatStamp(task.completedAt)}
+            Approved by your teacher · {formatStamp(task.completedAt)}
           </p>
-        ) : (
-          <div className="mt-4 grid gap-2">
-            {task.status === 'pending' && !task.inProgress ? (
-              <Button tone="ghost" onClick={() => void api(`/api/student/assignments/${task.assignmentId}/start`, { method: 'POST' }).then(() => bump())}>
-                Start — mark in progress
-              </Button>
-            ) : null}
-            <button
-              type="button"
-              data-testid="complete-task"
-              onClick={() => setOpen(true)}
-              className="rounded-3xl bg-[#38C98B] px-4 py-4 text-xl font-extrabold text-white shadow-md"
-            >
-              ✓ ĐÃ HOÀN THÀNH
-            </button>
-          </div>
-        )}
-        {formError ? <div className="mt-3"><Banner tone="error">{formError}</Banner></div> : null}
+        ) : null}
       </section>
-      <Modal open={open} title="Confirm completion" onClose={() => setOpen(false)}>
-        <p className="font-bold">Save this task as finished? You cannot change it back yourself. Your teacher can reopen it.</p>
-        <div className="mt-4 flex gap-2">
-          <Button tone="green" disabled={busy} onClick={() => void complete()} testId="confirm-complete">{busy ? 'Saving…' : '✓ ĐÃ HOÀN THÀNH'}</Button>
-          <Button tone="ghost" onClick={() => setOpen(false)}>Not yet</Button>
-        </div>
-      </Modal>
+
+      <section className="rounded-3xl bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-extrabold">Materials from your teacher</h2>
+        {materials.loading && !materials.data ? <Loading /> : null}
+        {materials.error ? <Banner tone="error">{materials.error}</Banner> : null}
+        {(materials.data?.materials ?? []).length === 0 ? <p className="text-sm font-semibold text-slate-500">No reference materials attached.</p> : (
+          <ul className="grid gap-2">
+            {materials.data?.materials.map((item) => (
+              <li key={item.id}>
+                <a className="font-extrabold text-[#315fc4] underline" href={item.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">{item.file_name}</a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-3xl bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-extrabold">Your submission</h2>
+        {latest ? (
+          <div className="mb-4 rounded-2xl bg-[#f4f8ff] p-3">
+            <p className="font-extrabold">Latest: {latest.file_name}</p>
+            <p className="text-xs font-semibold text-slate-500">{formatStamp(latest.created_at)}</p>
+            {latest.review ? (
+              <div className={`mt-2 rounded-xl p-3 font-bold ${latest.review.status === 'approved' ? 'bg-[#D8F6E4] text-green-800' : 'bg-[#FFE0C2] text-orange-900'}`}>
+                {latest.review.status === 'approved' ? 'Approved' : 'Please revise and submit again'}
+                {latest.review.feedback ? <p className="mt-1 font-semibold">Teacher feedback: {latest.review.feedback}</p> : null}
+              </div>
+            ) : <p className="mt-2 text-sm font-bold text-[#315fc4]">Waiting for your teacher to review.</p>}
+          </div>
+        ) : <p className="mb-3 text-sm font-semibold text-slate-500">You need to submit a file or a link before this task can be completed.</p>}
+
+        {!done ? (
+          <form className="grid gap-3" onSubmit={(event) => void submitWork(event)}>
+            <Field label="Upload a file (PDF, Word or image — max 10 MB)">
+              <input className={controlClass} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+            </Field>
+            <Field label="Or paste a link">
+              <input className={controlClass} type="url" value={link} onChange={(event) => setLink(event.target.value)} placeholder="https://..." />
+            </Field>
+            <Field label="Message to your teacher (optional)">
+              <textarea className={controlClass} rows={2} value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Add a short note..." />
+            </Field>
+            {formError ? <Banner tone="error">{formError}</Banner> : null}
+            {message ? <Banner tone="ok">{message}</Banner> : null}
+            <Button type="submit" tone="green" disabled={busy}>{busy ? 'Submitting…' : latest?.review?.status === 'revision_requested' ? 'Submit revised work' : 'Submit work for review'}</Button>
+          </form>
+        ) : null}
+      </section>
     </div>
   );
 }
