@@ -3,7 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuery } from '../lib/query';
 import { greeting, hcmToday, formatWeekdayDate } from '../lib/format';
-import { Mascot } from './Mascot';
+import { InstallAppButton } from './InstallAppButton';
 import { playNotificationSound } from '../lib/sounds';
 import type { NotificationItem } from '../types';
 
@@ -20,9 +20,9 @@ const teacherLinks = [
 const studentLinks = [
   ['/student', 'Trang chủ', '⌂'],
   ['/student/tasks', 'Việc cần làm', '✓'],
-  ['/student/calendar', 'Calendar', '▣'],
+  ['/student/calendar', 'Lịch', '▣'],
   ['/student/progress', 'Tiến độ của tôi', '↗'],
-  ['/student/notifications', 'Notifications', '♧'],
+  ['/student/notifications', 'Thông báo', '♧'],
   ['/student/profile', 'Hồ sơ', '☺'],
 ];
 
@@ -46,16 +46,16 @@ export function AppShell() {
     <div className="app-shell mx-auto min-h-screen max-w-6xl px-4 py-5 sm:px-5">
       <header className="app-header flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="relative z-10 flex min-w-0 items-center gap-3">
-          <div className="brand-mark shrink-0"><span className="font-display text-2xl">✦</span></div>
+          <div className="brand-mark shrink-0"><img src="/icon.svg" alt="Biểu tượng Nhắc Việc" className="h-11 w-11 rounded-2xl" /></div>
           <div className="min-w-0">
-            <p className="font-display text-2xl leading-none text-[#FF914D] sm:text-3xl">Daily Duty</p>
+            <p className="font-display text-2xl leading-none text-[#FF914D] sm:text-3xl">Nhắc Việc</p>
             <p className="mt-1 truncate text-sm font-extrabold text-[#315fbf]">
               {greeting()}, {user?.name}!
             </p>
             <p className="mt-0.5 text-xs font-bold text-slate-500">{formatWeekdayDate(hcmToday())} · Asia/Ho_Chi_Minh</p>
           </div>
         </div>
-        <div className="relative z-10 flex items-center gap-2">
+        <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">\n          <InstallAppButton />
           <div className="hidden items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-xs font-extrabold text-[#52705f] sm:flex">
             <span className="text-[#38C98B]">●</span>
             {user?.role === 'teacher' ? 'Khu vực giáo viên' : 'Khu vực học sinh'}
@@ -77,7 +77,7 @@ export function AppShell() {
           >
             <span aria-hidden="true" className="text-base">{symbol}</span>
             {label}
-            {label === 'Notifications' && data && data.unread > 0 ? (
+            {label === 'Thông báo' && data && data.unread > 0 ? (
               <span className="ml-0.5 rounded-full bg-[#EF5B68] px-1.5 py-0.5 text-[11px] text-white">{data.unread}</span>
             ) : null}
           </NavLink>
