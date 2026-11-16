@@ -41,9 +41,7 @@ export function formatWeekdayDate(isoDate: string): string {
 
 export function formatTime(value: string): string {
   const [hour, minute] = value.split(':').map(Number);
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  const hour12 = hour % 12 || 12;
-  return `${hour12}:${String(minute).padStart(2, '0')} ${suffix}`;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
 export function formatStamp(iso: string): string {
