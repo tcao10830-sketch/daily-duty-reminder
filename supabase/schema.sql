@@ -46,6 +46,10 @@ alter table public.task_materials enable row level security;
 alter table public.assignment_submissions enable row level security;
 alter table public.assignment_reviews enable row level security;
 
+grant all on public.task_materials to service_role;
+grant all on public.assignment_submissions to service_role;
+grant all on public.assignment_reviews to service_role;
+
 -- The app accesses these tables only from its server using the Supabase secret/service-role key.
 -- Do not add public client policies or expose the server key in frontend code.
 
