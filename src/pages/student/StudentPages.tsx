@@ -132,7 +132,7 @@ export function StudentTaskPage() {
   const { id = '' } = useParams();
   const { data, error, loading } = useQuery<{ assignment: AssignmentCard }>(`/api/student/tasks/${id}`);
   const materials = useQuery<{ materials: { id: string; file_name: string; signedUrl: string | null; link_url: string | null }[] }>(`/api/student/tasks/${id}/materials`);
-  const submissions = useQuery<{ submissions: { id: string; file_name: string; signedUrl: string | null; link_url: string | null; comment: string; created_at: string; review: { status: 'approved' | 'revision_requested'; feedback: string; created_at: string } | null }[] }>(`/api/student/assignments/${id}/submissions`);
+  const submissions = useQuery<{ submissions: { id: string; file_name: string; files?: { file_name: string; signedUrl: string | null }[]; signedUrl: string | null; link_url: string | null; comment: string; created_at: string; review: { status: 'approved' | 'revision_requested'; feedback: string; created_at: string } | null }[] }>(`/api/student/assignments/${id}/submissions`);
   const { bump } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const [link, setLink] = useState('');
@@ -220,7 +220,12 @@ export function StudentTaskPage() {
         <h2 className="mb-3 text-lg font-extrabold">Your submission</h2>
         {latest ? (
           <div className="mb-4 rounded-2xl bg-[#f4f8ff] p-3">
-            <p className="font-extrabold">Latest: {latest.file_name}</p>
+            <p className="font-extrabold">Latest submission</p>
+            <div className="mt-1 grid gap-1">
+              {(latest.files?.length ? latest.files : [{ file_name: latest.file_name, signedUrl: latest.signedUrl }]).map((item, index) => (
+                <a key={`${item.file_name}-${index}`} className="break-all text-sm font-bold text-[#315fc4] underline" href={item.signedUrl || latest.link_url || '#'} target="_blank" rel="noreferrer">{item.file_name}</a>
+              ))}
+            </div>
             <p className="text-xs font-semibold text-slate-500">{formatStamp(latest.created_at)}</p>
             {latest.review ? (
               <div className={`mt-2 rounded-xl p-3 font-bold ${latest.review.status === 'approved' ? 'bg-[#D8F6E4] text-green-800' : 'bg-[#FFE0C2] text-orange-900'}`}>
