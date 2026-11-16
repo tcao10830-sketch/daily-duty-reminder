@@ -37,20 +37,20 @@ export function ProgressPage() {
               <h2 className="text-xl font-extrabold">{item.name}</h2>
               <Ring value={item.completionRate} />
             </div>
-            <p className="font-bold text-slate-500">{item.completedCount} đã hoàn thành · {item.pendingCount} đang chờ · {item.overdueCount} quá hạn</p>
+            <p className="font-bold text-slate-500">{item.completedCount} completed · {item.pendingCount} pending · {item.overdueCount} overdue</p>
           </Link>
         ))}
       </section>
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-xl font-extrabold">Mở nhiệm vụ để xem tiến độ từng học sinh</h2>
+        <h2 className="mb-3 text-xl font-extrabold">Open a task to see each student</h2>
         <div className="grid gap-2">
           {tasks.map((task) => (
             <Link key={task.id} to={`/teacher/tasks/${task.id}`} className="flex items-center justify-between rounded-2xl bg-[#f7fbff] px-3 py-2 font-extrabold">
               <span>{task.title} · {task.className}</span>
-              <span>{task.completedCount}/{task.assignedCount} · {task.completionRate}% hoàn thành</span>
+              <span>{task.completedCount}/{task.assignedCount} · {task.completionRate}%</span>
             </Link>
           ))}
-          {tasks.length === 0 ? <Empty>Không có nhiệm vụ đang hoạt động.</Empty> : null}
+          {tasks.length === 0 ? <Empty>No active tasks.</Empty> : null}
         </div>
       </section>
     </div>
@@ -66,24 +66,24 @@ export function StudentProgressPage() {
     weekly: WeekPoint[];
   }>(`/api/teacher/students/${id}`);
   if (loading && !data) return <Loading />;
-  if (!data) return <Banner tone="error">{error || 'Không tìm thấy học sinh.'}</Banner>;
+  if (!data) return <Banner tone="error">{error || 'Student not found.'}</Banner>;
   return (
     <div className="grid gap-4">
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-sm">
         <div>
           <h1 className="text-2xl font-extrabold">{data.student.name}</h1>
           <p className="font-bold text-slate-500">{data.student.class_name} · {data.student.email}</p>
-          <p className="mt-2 font-bold">{data.stats.completed} đã hoàn thành · {data.stats.pending} đang chờ · {data.stats.overdue} quá hạn</p>
+          <p className="mt-2 font-bold">{data.stats.completed} completed · {data.stats.pending} pending · {data.stats.overdue} overdue</p>
         </div>
         <Ring value={data.stats.completionRate} />
       </section>
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="mb-2 font-extrabold">Nhiệm vụ hoàn thành trong tuần</h2>
+        <h2 className="mb-2 font-extrabold">Weekly completions</h2>
         <WeekBars days={data.weekly} />
       </section>
       <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="font-extrabold"><tr><th className="p-3">Nhiệm vụ</th><th className="p-3">Trạng thái</th><th className="p-3">Đã hoàn thành</th></tr></thead>
+          <thead className="font-extrabold"><tr><th className="p-3">Task</th><th className="p-3">Status</th><th className="p-3">Completed</th></tr></thead>
           <tbody>
             {data.assignments.map((row) => (
               <tr key={row.assignmentId} className="border-t">
@@ -107,10 +107,10 @@ export function NotificationsPage() {
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">Thông báo</h1>
-        <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Đánh dấu đã đọc tất cả</Button>
+        <h1 className="text-2xl font-extrabold">Notifications</h1>
+        <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Mark all read</Button>
       </div>
-      {data?.notifications.length === 0 ? <Empty>Thông báo sẽ xuất hiện khi có nhiệm vụ mới, được cập nhật, hoàn thành hoặc quá hạn.</Empty> : null}
+      {data?.notifications.length === 0 ? <Empty>No notifications yet. They appear when tasks are assigned, updated, completed, or become overdue.</Empty> : null}
       {data?.notifications.map((item) => (
         <button
           key={item.id}
@@ -148,7 +148,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto grid max-w-xl gap-4">
-      <h1 className="text-2xl font-extrabold">Cài đặt</h1>
+      <h1 className="text-2xl font-extrabold">Settings</h1>
       {message ? <Banner tone="ok">{message}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
       <form
@@ -158,15 +158,15 @@ export function SettingsPage() {
           api<{ user: User }>('/api/me', { method: 'PATCH', body: JSON.stringify({ name }) })
             .then((result) => {
               setUser(result.user);
-              setMessage('Đã lưu tên hiển thị.');
+              setMessage('Name saved.');
               bump();
             })
             .catch((err: Error) => setError(err.message));
         }}
       >
-        <Field label="Tên hiển thị"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
-        <p className="text-sm font-bold text-slate-500">{user?.email} · {user?.role} · thời gian theo múi giờ Việt Nam</p>
-        <Button type="submit">Lưu tên</Button>
+        <Field label="Display name"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
+        <p className="text-sm font-bold text-slate-500">{user?.email} · {user?.role} · times use Asia/Ho_Chi_Minh</p>
+        <Button type="submit">Save name</Button>
       </form>
       <form
         className="grid gap-3 rounded-3xl bg-white p-4 shadow-sm"
@@ -176,14 +176,14 @@ export function SettingsPage() {
             .then(() => {
               setCurrentPassword('');
               setNewPassword('');
-              setMessage('Đã cập nhật mật khẩu.');
+              setMessage('Password updated.');
             })
             .catch((err: Error) => setError(err.message));
         }}
       >
-        <Field label="Mật khẩu hiện tại"><input className={controlClass} type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></Field>
-        <Field label="Mật khẩu mới"><input className={controlClass} type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></Field>
-        <Button type="submit" tone="orange">Đổi mật khẩu</Button>
+        <Field label="Current password"><input className={controlClass} type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></Field>
+        <Field label="New password"><input className={controlClass} type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></Field>
+        <Button type="submit" tone="orange">Change password</Button>
       </form>
       {canManageTeachers ? (
         <form
@@ -200,20 +200,20 @@ export function SettingsPage() {
                 setTeacherName('');
                 setTeacherEmail('');
                 setTeacherPassword('');
-                setMessage('Đã tạo tài khoản giáo viên. Giáo viên có thể đăng nhập ngay.');
+                setMessage('Teacher account created. They can now log in.');
               })
               .catch((err: Error) => setError(err.message))
               .finally(() => setCreatingTeacher(false));
           }}
         >
           <div>
-            <h2 className="font-extrabold">Quản lý tài khoản giáo viên</h2>
-            <p className="text-sm font-bold text-slate-500">Chỉ giáo viên đầu tiên mới có thể tạo thêm tài khoản giáo viên.</p>
+            <h2 className="font-extrabold">Manage teacher accounts</h2>
+            <p className="text-sm font-bold text-slate-500">Only the first teacher can create additional teacher accounts.</p>
           </div>
-          <Field label="Tên giáo viên"><input className={controlClass} value={teacherName} onChange={(event) => setTeacherName(event.target.value)} required /></Field>
-          <Field label="Email giáo viên"><input className={controlClass} type="email" value={teacherEmail} onChange={(event) => setTeacherEmail(event.target.value)} required /></Field>
-          <Field label="Mật khẩu tạm thời"><input className={controlClass} type="password" minLength={6} value={teacherPassword} onChange={(event) => setTeacherPassword(event.target.value)} required /></Field>
-          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Đang tạo…' : 'Tạo tài khoản giáo viên'}</Button>
+          <Field label="Teacher name"><input className={controlClass} value={teacherName} onChange={(event) => setTeacherName(event.target.value)} required /></Field>
+          <Field label="Teacher email"><input className={controlClass} type="email" value={teacherEmail} onChange={(event) => setTeacherEmail(event.target.value)} required /></Field>
+          <Field label="Temporary password"><input className={controlClass} type="password" minLength={6} value={teacherPassword} onChange={(event) => setTeacherPassword(event.target.value)} required /></Field>
+          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Creating…' : 'Create teacher account'}</Button>
         </form>
       ) : null}
     </div>
