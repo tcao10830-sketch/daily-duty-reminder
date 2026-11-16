@@ -1,9 +1,9 @@
 {
   "id": "/",
-  "name": "Nhắc Việc Mỗi Ngày",
-  "short_name": "Nhắc Việc",
-  "description": "Ứng dụng giao nhiệm vụ, nhắc hạn và theo dõi tiến độ học tập.",
-  "lang": "vi-VN",
+  "name": "Daily Duty Reminder",
+  "short_name": "Daily Duty",
+  "description": "A friendly place to manage daily tasks and study reminders.",
+  "lang": "en",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
