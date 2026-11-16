@@ -73,13 +73,13 @@ function decodeFile(body: Record<string, unknown>) {
 }
 
 async function uploadFile(body: Record<string, unknown>, folder: string) {
-  const { url } = config();
+  config();
   const file = decodeFile(body);
   const path = `${folder}/${randomUUID()}-${file.name}`;
   const response = await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, {
     method: 'POST',
     headers: { 'Content-Type': file.mime, 'x-upsert': 'false' },
-    body: file.buffer,
+    body: file.buffer as unknown as BodyInit,
   });
   void response;
   return { path, name: file.name, mime: file.mime, size: file.buffer.length };
