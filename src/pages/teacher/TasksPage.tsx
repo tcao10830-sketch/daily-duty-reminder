@@ -251,7 +251,7 @@ export function TaskDetailPage() {
           </select>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
+          <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="font-extrabold text-slate-500">
               <tr><th className="p-2">Student</th><th className="p-2">Status</th><th className="p-2">Completion time</th><th className="p-2">Submissions / review</th><th className="p-2"></th></tr>
             </thead>
