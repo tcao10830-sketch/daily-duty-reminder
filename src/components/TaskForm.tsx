@@ -32,13 +32,13 @@ const swatch: Record<NoteColor, string> = {
   purple: '#E6D9FF',
 };
 const days = [
-  [1, 'Mon'],
-  [2, 'Tue'],
-  [3, 'Wed'],
-  [4, 'Thu'],
-  [5, 'Fri'],
-  [6, 'Sat'],
-  [0, 'Sun'],
+  [1, 'T2'],
+  [2, 'T3'],
+  [3, 'T4'],
+  [4, 'T5'],
+  [5, 'T6'],
+  [6, 'T7'],
+  [0, 'CN'],
 ];
 
 export function emptyTaskForm(classId = ''): TaskFormValues {
