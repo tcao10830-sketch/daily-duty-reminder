@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "Nhắc Việc Mỗi Ngày",
+  "short_name": "Nhắc Việc",
+  "description": "Ứng dụng giao nhiệm vụ, nhắc hạn và theo dõi tiến độ học tập.",
+  "lang": "vi-VN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fffaf0",
+  "theme_color": "#ffd84d",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
