@@ -4,6 +4,8 @@ import { StickyNote } from '../../components/StickyNote';
 import { TaskForm, emptyTaskForm, type TaskFormValues } from '../../components/TaskForm';
 import { Banner, Button, Empty, Loading, StatusPill } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
+import { fileUploadPayload } from '../../lib/fileUpload';
+import { SubmissionReview } from '../../components/SubmissionReview';
 import { api } from '../../lib/api';
 import { formatStamp } from '../../lib/format';
 import { useQuery } from '../../lib/query';
@@ -141,6 +143,12 @@ export function TaskEditPage() {
 export function TaskDetailPage() {
   const { id = '' } = useParams();
   const { data, error, loading } = useQuery<{ task: TaskSummary; assignments: AssignmentCard[] }>(`/api/teacher/tasks/${id}`);
+  const materials = useQuery<{ materials: { id: string; file_name: string; signedUrl: string | null; link_url: string | null }[] }>(`/api/teacher/tasks/${id}/materials`);
+  const [materialFile, setMaterialFile] = useState<File | null>(null);
+  const [materialLink, setMaterialLink] = useState('');
+  const [materialLabel, setMaterialLabel] = useState('');
+  const [materialBusy, setMaterialBusy] = useState(false);
+  const [materialError, setMaterialError] = useState('');
   const { bump } = useAuth();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<'all' | CompletionStatus>('all');
@@ -158,6 +166,26 @@ export function TaskDetailPage() {
       after?.();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Request failed.');
+    }
+  }
+
+  async function addMaterial(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMaterialBusy(true);
+    setMaterialError('');
+    try {
+      const payload: Record<string, unknown> = { label: materialLabel, linkUrl: materialLink.trim() };
+      if (materialFile) Object.assign(payload, await fileUploadPayload(materialFile));
+      if (!materialFile && !materialLink.trim()) throw new Error('Choose a file or add a link.');
+      await api(`/api/teacher/tasks/${id}/materials`, { method: 'POST', body: JSON.stringify(payload) });
+      setMaterialFile(null);
+      setMaterialLink('');
+      setMaterialLabel('');
+      bump();
+    } catch (err) {
+      setMaterialError(err instanceof Error ? err.message : 'Could not attach this material.');
+    } finally {
+      setMaterialBusy(false);
     }
   }
 
@@ -180,6 +208,26 @@ export function TaskDetailPage() {
         footer={`${data.task.completionRate}% complete`}
       />
       {data.task.instructions ? <p className="rounded-3xl bg-white p-4 font-bold shadow-sm">Instructions: {data.task.instructions}</p> : null}
+      <section className="rounded-3xl bg-white p-4 shadow-sm">
+        <h2 className="mb-3 text-lg font-extrabold">Materials for students</h2>
+        {(materials.data?.materials ?? []).length > 0 ? (
+          <ul className="mb-3 grid gap-2">
+            {materials.data?.materials.map((item) => (
+              <li key={item.id}>
+                <a className="font-bold text-[#315fc4] underline" href={item.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">{item.file_name}</a>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="mb-3 text-sm font-semibold text-slate-500">No materials attached yet.</p>}
+        <form className="grid gap-2 sm:grid-cols-2" onSubmit={(event) => void addMaterial(event)}>
+          <input className="rounded-xl border p-2 text-sm" value={materialLabel} onChange={(event) => setMaterialLabel(event.target.value)} placeholder="Display name (optional)" />
+          <input className="rounded-xl border p-2 text-sm" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setMaterialFile(event.target.files?.[0] ?? null)} />
+          <input className="rounded-xl border p-2 text-sm sm:col-span-2" type="url" value={materialLink} onChange={(event) => setMaterialLink(event.target.value)} placeholder="Or paste a reference link https://..." />
+          {materialError ? <div className="sm:col-span-2"><Banner tone="error">{materialError}</Banner></div> : null}
+          <div className="sm:col-span-2"><Button type="submit" disabled={materialBusy}>{materialBusy ? 'Uploading…' : 'Attach material'}</Button></div>
+        </form>
+        <p className="mt-2 text-xs font-semibold text-slate-400">PDF, Word and images · maximum 10 MB per file.</p>
+      </section>
       <div className="flex flex-wrap gap-2">
         <Link to={`/teacher/tasks/${id}/edit`} className="rounded-2xl bg-white px-4 py-2.5 font-extrabold shadow-sm">Edit</Link>
         <Button onClick={() => void act(`/api/teacher/tasks/${id}/duplicate`, 'POST', () => setMessage('Copy created.'))}>Duplicate</Button>
@@ -205,12 +253,13 @@ export function TaskDetailPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="font-extrabold text-slate-500">
-              <tr><th className="p-2">Student</th><th className="p-2">Status</th><th className="p-2">Completion time</th><th className="p-2"></th></tr>
+              <tr><th className="p-2">Student</th><th className="p-2">Status</th><th className="p-2">Completion time</th><th className="p-2">Submissions / review</th><th className="p-2"></th></tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr key={row.assignmentId} className="border-t border-[#eef3f8]">
                   <td className="p-2 font-extrabold"><Link to={`/teacher/progress/${row.studentId}`}>{row.studentName}</Link></td>
+                  <td className="p-2"><SubmissionReview assignmentId={row.assignmentId} /></td>
                   <td className="p-2"><StatusPill status={row.status} /></td>
                   <td className="p-2 font-bold">{row.completedAt ? formatStamp(row.completedAt) : '—'}</td>
                   <td className="p-2">
