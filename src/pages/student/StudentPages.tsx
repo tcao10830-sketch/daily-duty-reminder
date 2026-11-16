@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarBoard } from '../../components/CalendarBoard';
 import { StickyNote } from '../../components/StickyNote';
@@ -146,7 +146,7 @@ export function StudentTaskPage() {
   const done = task.status === 'on_time' || task.status === 'late';
   const latest = submissions.data?.submissions?.[0];
 
-  async function submitWork(event: React.FormEvent<HTMLFormElement>) {
+  async function submitWork(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setFormError('');
