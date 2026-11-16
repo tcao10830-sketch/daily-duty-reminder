@@ -66,12 +66,12 @@ export function StickyNote({
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs font-extrabold">
         <span className="rounded-full bg-white/70 px-2 py-1">{className}</span>
         {studentName ? <span className="rounded-full bg-white/70 px-2 py-1">{studentName}</span> : null}
-        {wholeClass ? <span className="rounded-full bg-white/70 px-2 py-1">Whole class</span> : null}
+        {wholeClass ? <span className="rounded-full bg-white/70 px-2 py-1">Cả lớp</span> : null}
       </div>
       <dl className="mt-3 space-y-1 text-sm font-bold">
-        <div>Assigned {formatLongDate(assignmentDate)}</div>
+        <div>Ngày giao {formatLongDate(assignmentDate)}</div>
         <div>
-          Due {formatLongDate(deadlineDate)} · {formatTime(deadlineTime)}
+          Hạn nộp {formatLongDate(deadlineDate)} · {formatTime(deadlineTime)}
         </div>
         {deadlineAt && status ? (
           <div>
@@ -80,8 +80,8 @@ export function StickyNote({
         ) : null}
       </dl>
       <p className="mt-2 text-xs font-bold">
-        <span className="font-extrabold">Penalty: </span>
-        {penalty || 'None'}
+        <span className="font-extrabold">Xử lý nếu trễ hạn: </span>
+        {penalty || 'Không có'}
       </p>
       <div className="mt-3 flex items-center justify-between gap-2">
         {status ? <StatusPill status={status} /> : <span />}
