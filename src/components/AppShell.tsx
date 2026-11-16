@@ -3,27 +3,27 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuery } from '../lib/query';
 import { greeting, hcmToday, formatWeekdayDate } from '../lib/format';
-import { Mascot } from './Mascot';
+import { InstallAppButton } from './InstallAppButton';
 import { playNotificationSound } from '../lib/sounds';
 import type { NotificationItem } from '../types';
 
 const teacherLinks = [
-  ['/teacher', 'Dashboard', '✦'],
-  ['/teacher/classes', 'Classes', '▦'],
-  ['/teacher/tasks', 'Tasks', '✓'],
-  ['/teacher/calendar', 'Calendar', '▣'],
-  ['/teacher/progress', 'Student Progress', '↗'],
-  ['/teacher/notifications', 'Notifications', '♧'],
-  ['/teacher/settings', 'Settings', '⚙'],
+  ['/teacher', 'Tổng quan', '✦'],
+  ['/teacher/classes', 'Lớp học', '▦'],
+  ['/teacher/tasks', 'Nhiệm vụ', '✓'],
+  ['/teacher/calendar', 'Lịch', '▣'],
+  ['/teacher/progress', 'Tiến độ học sinh', '↗'],
+  ['/teacher/notifications', 'Thông báo', '♧'],
+  ['/teacher/settings', 'Cài đặt', '⚙'],
 ];
 
 const studentLinks = [
-  ['/student', 'Home', '⌂'],
-  ['/student/tasks', 'My Tasks', '✓'],
-  ['/student/calendar', 'Calendar', '▣'],
-  ['/student/progress', 'My Progress', '↗'],
-  ['/student/notifications', 'Notifications', '♧'],
-  ['/student/profile', 'Profile', '☺'],
+  ['/student', 'Trang chủ', '⌂'],
+  ['/student/tasks', 'Việc cần làm', '✓'],
+  ['/student/calendar', 'Lịch', '▣'],
+  ['/student/progress', 'Tiến độ của tôi', '↗'],
+  ['/student/notifications', 'Thông báo', '♧'],
+  ['/student/profile', 'Hồ sơ', '☺'],
 ];
 
 export function AppShell() {
@@ -46,26 +46,27 @@ export function AppShell() {
     <div className="app-shell mx-auto min-h-screen max-w-6xl px-4 py-5 sm:px-5">
       <header className="app-header flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="relative z-10 flex min-w-0 items-center gap-3">
-          <div className="brand-mark shrink-0"><span className="font-display text-2xl">✦</span></div>
+          <div className="brand-mark shrink-0"><img src="/icon.svg" alt="Biểu tượng Nhắc Việc" className="h-11 w-11 rounded-2xl" /></div>
           <div className="min-w-0">
-            <p className="font-display text-2xl leading-none text-[#FF914D] sm:text-3xl">Daily Duty</p>
+            <p className="font-display text-2xl leading-none text-[#FF914D] sm:text-3xl">Nhắc Việc</p>
             <p className="mt-1 truncate text-sm font-extrabold text-[#315fbf]">
               {greeting()}, {user?.name}!
             </p>
-            <p className="mt-0.5 text-xs font-bold text-slate-500">{formatWeekdayDate(hcmToday())} · Asia/Ho_Chi_Minh</p>
+            <p className="mt-0.5 text-xs font-bold text-slate-500">{formatWeekdayDate(hcmToday())} · Giờ Việt Nam</p>
           </div>
         </div>
-        <div className="relative z-10 flex items-center gap-2">
+        <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">
+          <InstallAppButton />
           <div className="hidden items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-xs font-extrabold text-[#52705f] sm:flex">
             <span className="text-[#38C98B]">●</span>
-            {user?.role === 'teacher' ? 'Teacher space' : 'Student space'}
+            {user?.role === 'teacher' ? 'Khu vực giáo viên' : 'Khu vực học sinh'}
           </div>
           <button type="button" onClick={logout} className="rounded-full border border-white bg-white/90 px-4 py-2 text-sm font-extrabold text-[#40516b] shadow-sm hover:bg-[#fff3d1]">
-            Log out
+            Đăng xuất
           </button>
         </div>
       </header>
-      <nav className="app-nav mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Main navigation">
+      <nav className="app-nav mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Điều hướng chính">
         {links.map(([to, label, symbol]) => (
           <NavLink
             key={to}
@@ -77,7 +78,7 @@ export function AppShell() {
           >
             <span aria-hidden="true" className="text-base">{symbol}</span>
             {label}
-            {label === 'Notifications' && data && data.unread > 0 ? (
+            {label === 'Thông báo' && data && data.unread > 0 ? (
               <span className="ml-0.5 rounded-full bg-[#EF5B68] px-1.5 py-0.5 text-[11px] text-white">{data.unread}</span>
             ) : null}
           </NavLink>
@@ -87,7 +88,7 @@ export function AppShell() {
         <Outlet />
       </main>
       <footer className="mt-10 flex items-center justify-center gap-2 pb-4 text-xs font-bold text-slate-400">
-        <span>Made for a brighter study day</span>
+        <span>Mỗi ngày học tập thêm vui</span>
         <span className="text-[#FFB94D]">✦</span>
       </footer>
     </div>

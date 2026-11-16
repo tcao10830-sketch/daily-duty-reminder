@@ -32,13 +32,13 @@ const swatch: Record<NoteColor, string> = {
   purple: '#E6D9FF',
 };
 const days = [
-  [1, 'Mon'],
-  [2, 'Tue'],
-  [3, 'Wed'],
-  [4, 'Thu'],
-  [5, 'Fri'],
-  [6, 'Sat'],
-  [0, 'Sun'],
+  [1, 'T2'],
+  [2, 'T3'],
+  [3, 'T4'],
+  [4, 'T5'],
+  [5, 'T6'],
+  [6, 'T7'],
+  [0, 'CN'],
 ];
 
 export function emptyTaskForm(classId = ''): TaskFormValues {
@@ -92,17 +92,17 @@ export function TaskForm({
         void onSubmit(values);
       }}
     >
-      <Field label="Task title">
+      <Field label="Tên nhiệm vụ">
         <input className={controlClass} value={values.title} onChange={(event) => set('title', event.target.value)} required />
       </Field>
-      <Field label="Description">
+      <Field label="Mô tả">
         <textarea className={controlClass} rows={3} value={values.description} onChange={(event) => set('description', event.target.value)} />
       </Field>
-      <Field label="Additional instructions">
+      <Field label="Hướng dẫn bổ sung">
         <textarea className={controlClass} rows={2} value={values.instructions} onChange={(event) => set('instructions', event.target.value)} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Target class">
+        <Field label="Lớp nhận nhiệm vụ">
           <select
             className={controlClass}
             value={values.classId}
@@ -110,7 +110,7 @@ export function TaskForm({
             required
             disabled={mode === 'edit'}
           >
-            <option value="">Choose a class</option>
+            <option value="">Chọn lớp</option>
             {classes.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -118,9 +118,9 @@ export function TaskForm({
             ))}
           </select>
         </Field>
-        <Field label="Target student (optional)">
+        <Field label="Học sinh nhận nhiệm vụ (không bắt buộc)">
           <select className={controlClass} value={values.studentId} onChange={(event) => set('studentId', event.target.value)} disabled={mode === 'edit'}>
-            <option value="">Whole class</option>
+            <option value="">Cả lớp</option>
             {students.map((student) => (
               <option key={student.id} value={student.id}>
                 {student.name}
@@ -130,30 +130,30 @@ export function TaskForm({
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Assignment date">
+        <Field label="Ngày giao">
           <input className={controlClass} type="date" value={values.assignmentDate} onChange={(event) => set('assignmentDate', event.target.value)} required />
         </Field>
-        <Field label="Deadline date">
+        <Field label="Hạn hoàn thành">
           <input className={controlClass} type="date" value={values.deadlineDate} onChange={(event) => set('deadlineDate', event.target.value)} required />
         </Field>
-        <Field label="Deadline time">
+        <Field label="Giờ hết hạn">
           <input className={controlClass} type="time" value={values.deadlineTime} onChange={(event) => set('deadlineTime', event.target.value)} required />
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Priority">
+        <Field label="Mức độ ưu tiên">
           <select className={controlClass} value={values.priority} onChange={(event) => set('priority', event.target.value as Priority)}>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="low">Thấp</option>
+            <option value="medium">Trung bình</option>
+            <option value="high">Cao</option>
           </select>
         </Field>
-        <Field label="Penalty for missing the deadline">
-          <input className={controlClass} value={values.penalty} onChange={(event) => set('penalty', event.target.value)} placeholder="The teacher writes the penalty" />
+        <Field label="Hình thức xử lý nếu trễ hạn">
+          <input className={controlClass} value={values.penalty} onChange={(event) => set('penalty', event.target.value)} placeholder="Giáo viên nhập hình thức xử lý" />
         </Field>
       </div>
       <div>
-        <p className="mb-2 text-sm font-extrabold">Note color</p>
+        <p className="mb-2 text-sm font-extrabold">Màu ghi chú</p>
         <div className="flex flex-wrap gap-2">
           {colors.map((color) => (
             <button
@@ -169,16 +169,16 @@ export function TaskForm({
       </div>
       {mode === 'create' ? (
         <div className="grid gap-3">
-          <Field label="Schedule">
+          <Field label="Lịch lặp lại">
             <select className={controlClass} value={values.recurrence} onChange={(event) => set('recurrence', event.target.value as Recurrence)}>
-              <option value="once">One-time</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="custom">Custom dates</option>
+              <option value="once">Một lần</option>
+              <option value="daily">Hằng ngày</option>
+              <option value="weekly">Hằng tuần</option>
+              <option value="custom">Ngày tùy chọn</option>
             </select>
           </Field>
           {values.recurrence === 'daily' || values.recurrence === 'weekly' ? (
-            <Field label="How many days ahead">
+            <Field label="Tạo trước bao nhiêu ngày">
               <input
                 className={controlClass}
                 type="number"
@@ -234,16 +234,16 @@ export function TaskForm({
               </div>
             </div>
           ) : null}
-          <p className="text-sm font-bold text-slate-500">Daily and weekly tasks create one note per matching day. The same day is never added twice.</p>
+          <p className="text-sm font-bold text-slate-500">Nhiệm vụ hằng ngày và hằng tuần sẽ tạo một ghi chú cho mỗi ngày phù hợp. Không tạo trùng nhiệm vụ trong cùng một ngày.</p>
         </div>
       ) : (
         <label className="flex items-center gap-2 font-bold">
           <input type="checkbox" checked={values.applyToSeries} onChange={(event) => set('applyToSeries', event.target.checked)} />
-          Apply title, instructions, penalty, color, and deadline time to later tasks in this series
+          Áp dụng tên, hướng dẫn, hình thức xử lý, màu sắc và giờ hết hạn cho các nhiệm vụ tiếp theo trong chuỗi này
         </label>
       )}
       <Button type="submit" disabled={busy} testId="save-task">
-        {busy ? 'Saving…' : mode === 'create' ? 'Assign task' : 'Save changes'}
+        {busy ? 'Đang lưu…' : mode === 'create' ? 'Giao nhiệm vụ' : 'Lưu thay đổi'}
       </Button>
     </form>
   );

@@ -11,16 +11,16 @@ export function hcmToday(): string {
 
 export function greeting(): string {
   const hour = Number(
-    new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: 'numeric', hourCycle: 'h23' }).format(new Date()),
+    new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: 'numeric', hourCycle: 'h23' }).format(new Date()),
   );
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'Chào buổi sáng';
+  if (hour < 18) return 'Chào buổi chiều';
+  return 'Chào buổi tối';
 }
 
 export function formatLongDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('vi-VN', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -30,7 +30,7 @@ export function formatLongDate(isoDate: string): string {
 
 export function formatWeekdayDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('vi-VN', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -41,13 +41,11 @@ export function formatWeekdayDate(isoDate: string): string {
 
 export function formatTime(value: string): string {
   const [hour, minute] = value.split(':').map(Number);
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  const hour12 = hour % 12 || 12;
-  return `${hour12}:${String(minute).padStart(2, '0')} ${suffix}`;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
 export function formatStamp(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
+  return new Date(iso).toLocaleString('vi-VN', {
     timeZone: 'Asia/Ho_Chi_Minh',
     month: 'short',
     day: 'numeric',
@@ -57,9 +55,9 @@ export function formatStamp(iso: string): string {
 }
 
 export function priorityLabel(priority: Priority): string {
-  if (priority === 'high') return 'High';
-  if (priority === 'medium') return 'Medium';
-  return 'Low';
+  if (priority === 'high') return 'Cao';
+  if (priority === 'medium') return 'Trung bình';
+  return 'Thấp';
 }
 
 export function statusClass(status: CompletionStatus): string {

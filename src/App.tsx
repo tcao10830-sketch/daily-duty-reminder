@@ -11,7 +11,7 @@ import type { Role } from './types';
 
 function Guard({ role }: { role: Role }) {
   const { user, ready } = useAuth();
-  if (!ready) return <p className="grid min-h-screen place-items-center font-extrabold text-[#4F87FF]">Loading…</p>;
+  if (!ready) return <p className="grid min-h-screen place-items-center font-extrabold text-[#4F87FF]">Đang tải…</p>;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== role) return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
   return <AppShell />;
@@ -19,7 +19,7 @@ function Guard({ role }: { role: Role }) {
 
 function HomeRedirect() {
   const { user, ready } = useAuth();
-  if (!ready) return <p className="grid min-h-screen place-items-center font-extrabold text-[#4F87FF]">Loading…</p>;
+  if (!ready) return <p className="grid min-h-screen place-items-center font-extrabold text-[#4F87FF]">Đang tải…</p>;
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
 }
