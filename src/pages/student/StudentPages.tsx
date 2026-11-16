@@ -37,7 +37,7 @@ export function StudentHomePage() {
             <span className="text-[#FF914D]">✦</span> Keep growing, keep glowing
           </div>
         </div>
-        <div className="relative z-10 hidden shrink-0 sm:block">
+        <div className="relative z-10 shrink-0">
           <Mascot size={132} />
         </div>
       </section>
