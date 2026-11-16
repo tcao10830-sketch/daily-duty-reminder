@@ -8,7 +8,7 @@ export function Mascot({ size = 112, className = '' }: { size?: number; classNam
       style={style}
       viewBox="0 0 220 220"
       role="img"
-      aria-label="Mầm, the Happy Study Club star mascot"
+      aria-label="Mầm, linh vật ngôi sao của Nhắc Việc Mỗi Ngày"
     >
       <defs>
         <linearGradient id="mam-star" x1="0" y1="0" x2="1" y2="1">
