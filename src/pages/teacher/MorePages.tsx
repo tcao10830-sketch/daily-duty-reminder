@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarBoard } from '../../components/CalendarBoard';
 import { Banner, Button, Empty, Field, Loading, Ring, StatusPill, WeekBars, controlClass } from '../../components/ui';
@@ -134,6 +134,17 @@ export function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [canManageTeachers, setCanManageTeachers] = useState(false);
+  const [teacherName, setTeacherName] = useState('');
+  const [teacherEmail, setTeacherEmail] = useState('');
+  const [teacherPassword, setTeacherPassword] = useState('');
+  const [creatingTeacher, setCreatingTeacher] = useState(false);
+
+  useEffect(() => {
+    api<{ canManageTeachers: boolean }>('/api/teacher/permissions')
+      .then((result) => setCanManageTeachers(result.canManageTeachers))
+      .catch(() => setCanManageTeachers(false));
+  }, []);
 
   return (
     <div className="mx-auto grid max-w-xl gap-4">
@@ -174,6 +185,37 @@ export function SettingsPage() {
         <Field label="New password"><input className={controlClass} type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></Field>
         <Button type="submit" tone="orange">Change password</Button>
       </form>
+      {canManageTeachers ? (
+        <form
+          className="grid gap-3 rounded-3xl bg-white p-4 shadow-sm"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setCreatingTeacher(true);
+            setError('');
+            api('/api/teacher/teachers', {
+              method: 'POST',
+              body: JSON.stringify({ name: teacherName, email: teacherEmail, password: teacherPassword }),
+            })
+              .then(() => {
+                setTeacherName('');
+                setTeacherEmail('');
+                setTeacherPassword('');
+                setMessage('Teacher account created. They can now log in.');
+              })
+              .catch((err: Error) => setError(err.message))
+              .finally(() => setCreatingTeacher(false));
+          }}
+        >
+          <div>
+            <h2 className="font-extrabold">Manage teacher accounts</h2>
+            <p className="text-sm font-bold text-slate-500">Only the first teacher can create additional teacher accounts.</p>
+          </div>
+          <Field label="Teacher name"><input className={controlClass} value={teacherName} onChange={(event) => setTeacherName(event.target.value)} required /></Field>
+          <Field label="Teacher email"><input className={controlClass} type="email" value={teacherEmail} onChange={(event) => setTeacherEmail(event.target.value)} required /></Field>
+          <Field label="Temporary password"><input className={controlClass} type="password" minLength={6} value={teacherPassword} onChange={(event) => setTeacherPassword(event.target.value)} required /></Field>
+          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Creating…' : 'Create teacher account'}</Button>
+        </form>
+      ) : null}
     </div>
   );
 }
