@@ -54,7 +54,7 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
               </a>
             ))}
           </div>
-          <p className="mt-1 text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</p>
+          <p className="mt-1 text-xs text-slate-500">{new Date(item.created_at).toLocaleString('vi-VN')}</p>
           {item.comment ? <p className="mt-1 text-xs">{item.comment}</p> : null}
           {item.review ? (
             <p className={`mt-1 text-xs font-extrabold ${item.review.status === 'approved' ? 'text-green-700' : 'text-orange-700'}`}>
