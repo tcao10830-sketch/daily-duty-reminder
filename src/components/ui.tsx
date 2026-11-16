@@ -76,15 +76,15 @@ export function Countdown({ deadlineAt, status }: { deadlineAt: string; status: 
   }, []);
   if (status === 'on_time' || status === 'late') return null;
   const diff = new Date(deadlineAt).getTime() - now;
-  if (diff <= 0) return <span className="font-extrabold text-[#EF5B68]">Deadline passed</span>;
+  if (diff <= 0) return <span className="font-extrabold text-[#EF5B68]">Đã quá hạn</span>;
   const total = Math.floor(diff / 1000);
   const days = Math.floor(total / 86400);
   const hours = Math.floor((total % 86400) / 3600);
   const mins = Math.floor((total % 3600) / 60);
   const secs = total % 60;
   const soon = diff < 3 * 60 * 60 * 1000;
-  const label = days > 0 ? `${days}d ${hours}h left` : hours > 0 ? `${hours}h ${mins}m left` : `${mins}m ${secs}s left`;
-  return <span className={soon ? 'font-extrabold text-[#EF5B68]' : 'font-bold text-[#315fbf]'}>{soon ? 'Reminder · ' : ''}{label}</span>;
+  const label = days > 0 ? `${days}d ${hours}h còn lại` : hours > 0 ? `${hours}h ${mins}m còn lại` : `${mins}m ${secs}s còn lại`;
+  return <span className={soon ? 'font-extrabold text-[#EF5B68]' : 'font-bold text-[#315fbf]'}>{soon ? 'Nhắc nhở · ' : ''}{label}</span>;
 }
 
 export function StatCard({ label, value, tint }: { label: string; value: number | string; tint: string }) {
@@ -129,12 +129,12 @@ export function Modal({
   open,
   title,
   children,
-  onClose,
+  onĐóng,
 }: {
   open: boolean;
   title: string;
   children: ReactNode;
-  onClose: () => void;
+  onĐóng: () => void;
 }) {
   if (!open) return null;
   return (
@@ -142,8 +142,8 @@ export function Modal({
       <div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-xl">
         <h2 className="text-xl font-extrabold">{title}</h2>
         <div className="mt-3">{children}</div>
-        <button type="button" className="mt-4 text-sm font-bold text-slate-500" onClick={onClose}>
-          Close
+        <button type="button" className="mt-4 text-sm font-bold text-slate-500" onClick={onĐóng}>
+          Đóng
         </button>
       </div>
     </div>
@@ -155,5 +155,5 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 export function Loading() {
-  return <p className="font-extrabold text-[#4F87FF]">Loading…</p>;
+  return <p className="font-extrabold text-[#4F87FF]">Đang tải…</p>;
 }
