@@ -189,6 +189,15 @@ setInterval(() => {
   sweepDeadlines().catch((error) => console.error(error));
 }, 60_000);
 
+// Run cloud-file retention cleanup on startup and periodically.
+// On Render's free plan the service may sleep; startup cleanup catches up after it wakes.
+cloud.cleanupExpiredSubmissions().then((count) => {
+  if (count) console.log(`Removed ${count} expired student submission(s).`);
+}).catch((error) => console.error('Submission cleanup failed:', error));
+setInterval(() => {
+  cloud.cleanupExpiredSubmissions().catch((error) => console.error('Submission cleanup failed:', error));
+}, 6 * 60 * 60 * 1000);
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://127.0.0.1');
   try {
