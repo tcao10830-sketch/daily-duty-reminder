@@ -1,8 +1,11 @@
+import { useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuery } from '../lib/query';
 import { greeting, hcmToday, formatWeekdayDate } from '../lib/format';
 import { Mascot } from './Mascot';
+import { playNotificationSound } from '../lib/sounds';
+import type { NotificationItem } from '../types';
 
 const teacherLinks = [
   ['/teacher', 'Dashboard', '✦'],
@@ -25,7 +28,19 @@ const studentLinks = [
 
 export function AppShell() {
   const { user, logout } = useAuth();
-  const { data } = useQuery<{ unread: number }>('/api/notifications');
+  const { data } = useQuery<{ unread: number; notifications: NotificationItem[] }>('/api/notifications');
+  const previousUnreadIds = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    const notifications = data?.notifications;
+    if (!notifications) return;
+    const unreadIds = new Set(notifications.filter((item) => !item.read).map((item) => item.id));
+    if (previousUnreadIds.current) {
+      const hasNewNotification = [...unreadIds].some((id) => !previousUnreadIds.current?.has(id));
+      if (hasNewNotification) playNotificationSound();
+    }
+    previousUnreadIds.current = unreadIds;
+  }, [data?.notifications]);
   const links = user?.role === 'teacher' ? teacherLinks : studentLinks;
   return (
     <div className="app-shell mx-auto min-h-screen max-w-6xl px-4 py-5 sm:px-5">
