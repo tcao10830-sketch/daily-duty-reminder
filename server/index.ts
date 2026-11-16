@@ -140,7 +140,6 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       }
       return { review };
     } },
-    { method: 'POST', pattern: '/api/student/assignments/:id/complete', run: async (params) => ({ assignment: await store.completeAssignment(requireUser(user, 'student').id, params.id) }) },
     { method: 'POST', pattern: '/api/student/assignments/:id/start', run: async (params) => ({ assignment: await store.startAssignment(requireUser(user, 'student').id, params.id) }) },
     { method: 'GET', pattern: '/api/notifications', run: async () => store.listNotifications(requireUser(user).id) },
     { method: 'POST', pattern: '/api/notifications/:id/read', run: async (params) => store.markRead(requireUser(user).id, params.id) },
