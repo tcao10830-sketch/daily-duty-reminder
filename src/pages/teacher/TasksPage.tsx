@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { StickyNote } from '../../components/StickyNote';
 import { TaskForm, emptyTaskForm, type TaskFormValues } from '../../components/TaskForm';
@@ -169,7 +169,7 @@ export function TaskDetailPage() {
     }
   }
 
-  async function addMaterial(event: React.FormEvent<HTMLFormElement>) {
+  async function addMaterial(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMaterialBusy(true);
     setMaterialError('');
