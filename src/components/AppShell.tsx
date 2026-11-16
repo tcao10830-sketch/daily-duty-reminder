@@ -52,7 +52,7 @@ export function AppShell() {
             <p className="mt-1 truncate text-sm font-extrabold text-[#315fbf]">
               {greeting()}, {user?.name}!
             </p>
-            <p className="mt-0.5 text-xs font-bold text-slate-500">{formatWeekdayDate(hcmToday())} · Asia/Ho_Chi_Minh</p>
+            <p className="mt-0.5 text-xs font-bold text-slate-500">{formatWeekdayDate(hcmToday())} · Giờ Việt Nam</p>
           </div>
         </div>
         <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">\n          <InstallAppButton />
