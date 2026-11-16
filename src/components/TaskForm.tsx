@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { NoteColor, Mức độ ưu tiên, Recurrence } from '../types';
+import type { NoteColor, Priority, Recurrence } from '../types';
 import { Button, Field, controlClass } from './ui';
 import { hcmToday } from '../lib/format';
 
@@ -12,7 +12,7 @@ export type TaskFormValues = {
   assignmentDate: string;
   deadlineDate: string;
   deadlineTime: string;
-  priority: Mức độ ưu tiên;
+  priority: Priority;
   penalty: string;
   color: NoteColor;
   recurrence: Recurrence;
@@ -142,7 +142,7 @@ export function TaskForm({
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Mức độ ưu tiên">
-          <select className={controlClass} value={values.priority} onChange={(event) => set('priority', event.target.value as Mức độ ưu tiên)}>
+          <select className={controlClass} value={values.priority} onChange={(event) => set('priority', event.target.value as Priority)}>
             <option value="low">Thấp</option>
             <option value="medium">Trung bình</option>
             <option value="high">Cao</option>
@@ -222,7 +222,7 @@ export function TaskForm({
                     setExtraDate('');
                   }}
                 >
-                  Thêm ngày
+                  Add date
                 </Button>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -234,7 +234,7 @@ export function TaskForm({
               </div>
             </div>
           ) : null}
-          <p className="text-sm font-bold text-slate-500">Hằng ngày and weekly tasks create one note per matching day. The same day is never added twice.</p>
+          <p className="text-sm font-bold text-slate-500">Nhiệm vụ hằng ngày và hằng tuần sẽ tạo một ghi chú cho mỗi ngày phù hợp. Không tạo trùng nhiệm vụ trong cùng một ngày.</p>
         </div>
       ) : (
         <label className="flex items-center gap-2 font-bold">
