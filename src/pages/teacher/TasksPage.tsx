@@ -205,7 +205,7 @@ export function TaskDetailPage() {
         priority={data.task.priority}
         penalty={data.task.penalty}
         color={data.task.color}
-        footer={`${data.task.completionRate}% complete`}
+        footer={`${data.task.completionRate}% hoàn thành`}
       />
       {data.task.instructions ? <p className="rounded-3xl bg-white p-4 font-bold shadow-sm" >Hướng dẫn: {data.task.instructions}</p> : null}
       <section className="rounded-3xl bg-white p-4 shadow-sm">
@@ -224,7 +224,7 @@ export function TaskDetailPage() {
           <input className="rounded-xl border p-2 text-sm" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setMaterialFile(event.target.files?.[0] ?? null)} />
           <input className="rounded-xl border p-2 text-sm sm:col-span-2" type="url" value={materialLink} onChange={(event) => setMaterialLink(event.target.value)} placeholder="Hoặc dán đường dẫn tài liệu https://..." />
           {materialError ? <div className="sm:col-span-2"><Banner tone="error">{materialError}</Banner></div> : null}
-          <div className="sm:col-span-2"><Button type="submit" disabled={materialBusy}>{materialBusy ? 'Đang tải tệp lên…' : 'Attach material'}</Button></div>
+          <div className="sm:col-span-2"><Button type="submit" disabled={materialBusy}>{materialBusy ? 'Đang tải tệp lên…' : 'Đính kèm tài liệu'}</Button></div>
         </form>
         <p className="mt-2 text-xs font-semibold text-slate-400">Hỗ trợ PDF, Word và hình ảnh · tối đa 10 MB mỗi tệp.</p>
       </section>
