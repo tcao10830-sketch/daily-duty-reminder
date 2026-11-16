@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Banner, Button, Field, controlClass } from '../components/ui';
+import { api } from '../lib/api';
 
 export function LoginPage() {
   const { login } = useAuth();
