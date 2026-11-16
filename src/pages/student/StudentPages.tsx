@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarBoard } from '../../components/CalendarBoard';
+import { Mascot } from '../../components/Mascot';
 import { StickyNote } from '../../components/StickyNote';
 import { Banner, Button, Empty, Field, Loading, Modal, Ring, StatCard, StatusPill, WeekBars, controlClass } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
@@ -27,9 +28,18 @@ export function StudentHomePage() {
   if (!data) return <Banner tone="error">{error}</Banner>;
   return (
     <div className="grid gap-4">
-      <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h1 className="text-2xl font-extrabold">Hello, {user?.name}</h1>
-        <p className="font-bold text-slate-500">Your duties for today are on the board below.</p>
+      <section className="dashboard-hero flex items-center justify-between gap-3 px-5 py-5 sm:px-7 sm:py-6">
+        <div className="relative z-10 max-w-xl">
+          <span className="inline-flex rounded-full bg-white/75 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-[#a66b22]">Your study corner</span>
+          <h1 className="mt-3 font-display text-3xl leading-tight text-[#34445e] sm:text-4xl">Hello, {user?.name}!</h1>
+          <p className="mt-2 max-w-lg text-sm font-bold leading-relaxed text-[#5f6d7f] sm:text-base">Your duties for today are on the board below. One small step at a time — you’ve got this!</p>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs font-extrabold text-[#4d8c6d]">
+            <span className="text-[#FF914D]">✦</span> Keep growing, keep glowing
+          </div>
+        </div>
+        <div className="relative z-10 hidden shrink-0 sm:block">
+          <Mascot size={132} />
+        </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Assigned" value={data.stats.assigned} tint="#FFF3B0" />
