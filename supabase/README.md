@@ -16,7 +16,7 @@ This creates the three metadata tables and a private `task-files` bucket. Files 
 Open the existing Render service's **Environment** page and add:
 
 - `SUPABASE_URL`: Project URL from Supabase **Project Settings → API**.
-- `SUPABASE_SERVICE_ROLE_KEY`: the server-side `service_role` key from Supabase **Project Settings → API → Project API keys**.
+- `SUPABASE_SECRET_KEY`: the server-side secret key (`sb_secret_...`) from Supabase **Project Settings → API Keys**. The app also accepts the legacy `SUPABASE_SERVICE_ROLE_KEY` if that is what your project shows.
 - `SUPABASE_STORAGE_BUCKET`: `task-files`.
 
 Save changes. Render will restart/redeploy the service.
