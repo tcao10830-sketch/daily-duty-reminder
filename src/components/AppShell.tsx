@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuery } from '../lib/query';
 import { greeting, hcmToday, formatWeekdayDate } from '../lib/format';
 import { Mascot } from './Mascot';
+import { playClickSound, playNotificationSound } from '../lib/sounds';
 
 const teacherLinks = [
   ['/teacher', 'Dashboard', '✦'],
@@ -27,6 +29,27 @@ export function AppShell() {
   const { user, logout } = useAuth();
   const { data } = useQuery<{ unread: number }>('/api/notifications');
   const links = user?.role === 'teacher' ? teacherLinks : studentLinks;
+  const previousUnread = useRef<number | null>(null);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const control = target.closest('button, a, [role="button"]');
+      if (!control || (control instanceof HTMLButtonElement && control.disabled)) return;
+      playClickSound();
+    };
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof data?.unread !== 'number') return;
+    if (previousUnread.current !== null && data.unread > previousUnread.current) {
+      playNotificationSound();
+    }
+    previousUnread.current = data.unread;
+  }, [data?.unread]);
   return (
     <div className="app-shell mx-auto min-h-screen max-w-6xl px-4 py-5 sm:px-5">
       <header className="app-header flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
