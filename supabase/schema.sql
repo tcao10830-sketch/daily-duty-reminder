@@ -48,3 +48,23 @@ alter table public.assignment_reviews enable row level security;
 
 -- The app accesses these tables only from its server using the Supabase secret/service-role key.
 -- Do not add public client policies or expose the server key in frontend code.
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'task-files',
+  'task-files',
+  false,
+  10485760,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ]
+)
+on conflict (id) do update
+set public = false,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
