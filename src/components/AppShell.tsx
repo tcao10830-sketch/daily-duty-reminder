@@ -55,7 +55,8 @@ export function AppShell() {
             <p className="mt-0.5 text-xs font-bold text-slate-500">{formatWeekdayDate(hcmToday())} · Giờ Việt Nam</p>
           </div>
         </div>
-        <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">\n          <InstallAppButton />
+        <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">
+          <InstallAppButton />
           <div className="hidden items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-xs font-extrabold text-[#52705f] sm:flex">
             <span className="text-[#38C98B]">●</span>
             {user?.role === 'teacher' ? 'Khu vực giáo viên' : 'Khu vực học sinh'}
