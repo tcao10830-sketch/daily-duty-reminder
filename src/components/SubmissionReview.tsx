@@ -34,10 +34,10 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
         body: JSON.stringify({ status, feedback }),
       });
       setFeedback('');
-      setMessage(status === 'approved' ? 'Đã duyệt bài nộp.' : 'Đã yêu cầu học sinh chỉnh sửa bài.');
+      setMessage(status === 'approved' ? 'Submission approved.' : 'Revision requested.');
       bump();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Không thể lưu nhận xét.');
+      setMessage(err instanceof Error ? err.message : 'Could not save review.');
     } finally {
       setBusy(false);
     }
@@ -45,7 +45,7 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
 
   return (
     <div className="min-w-[220px] space-y-2">
-      {items.length === 0 ? <span className="text-xs font-semibold text-slate-400">Chưa có bài nộp</span> : items.map((item) => (
+      {items.length === 0 ? <span className="text-xs font-semibold text-slate-400">No submission yet</span> : items.map((item) => (
         <div key={item.id} className="rounded-xl bg-[#f7f9fc] p-2">
           <div className="grid gap-1">
             {(item.files?.length ? item.files : [{ file_name: item.file_name, signedUrl: item.signedUrl }]).map((file, index) => (
@@ -54,25 +54,25 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
               </a>
             ))}
           </div>
-          <p className="mt-1 text-xs text-slate-500">{new Date(item.created_at).toLocaleString('vi-VN')}</p>
+          <p className="mt-1 text-xs text-slate-500">{new Date(item.created_at).toLocaleString()}</p>
           {item.comment ? <p className="mt-1 text-xs">{item.comment}</p> : null}
           {item.review ? (
             <p className={`mt-1 text-xs font-extrabold ${item.review.status === 'approved' ? 'text-green-700' : 'text-orange-700'}`}>
-              {item.review.status === 'approved' ? 'Đã duyệt' : 'Yêu cầu chỉnh sửa'}{item.review.feedback ? `: ${item.review.feedback}` : ''}
+              {item.review.status === 'approved' ? 'Approved' : 'Revision requested'}{item.review.feedback ? `: ${item.review.feedback}` : ''}
             </p>
           ) : (
             <div className="mt-2 space-y-2">
-              <textarea className="w-full rounded-lg border p-2 text-xs" rows={2} placeholder="Nhận xét (không bắt buộc)" value={feedback} onChange={(event) => setFeedback(event.target.value)} />
+              <textarea className="w-full rounded-lg border p-2 text-xs" rows={2} placeholder="Feedback (optional)" value={feedback} onChange={(event) => setFeedback(event.target.value)} />
               <div className="flex flex-wrap gap-1">
-                <Button tone="green" disabled={busy} onClick={() => void review(item.id, 'approved')}>Duyệt bài</Button>
-                <Button tone="orange" disabled={busy} onClick={() => void review(item.id, 'revision_requested')}>Yêu cầu chỉnh sửa</Button>
+                <Button tone="green" disabled={busy} onClick={() => void review(item.id, 'approved')}>Approve</Button>
+                <Button tone="orange" disabled={busy} onClick={() => void review(item.id, 'revision_requested')}>Request revision</Button>
               </div>
             </div>
           )}
         </div>
       ))}
       {message ? <p className="text-xs font-bold text-slate-600">{message}</p> : null}
-      {items.length > 0 && items.every((item) => item.review?.status === 'approved') ? <Empty>Tất cả bài nộp đã được duyệt.</Empty> : null}
+      {items.length > 0 && items.every((item) => item.review?.status === 'approved') ? <Empty>All submitted work approved.</Empty> : null}
     </div>
   );
 }
