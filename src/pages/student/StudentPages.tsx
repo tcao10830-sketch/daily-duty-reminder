@@ -155,7 +155,7 @@ export function StudentTaskPage() {
   const [showCelebration, setShowCelebration] = useState(false);
   const closeCelebration = useCallback(() => setShowCelebration(false), []);
   if (loading && !data) return <Loading />;
-  if (!data) return <Banner tone="error">{error || 'Task not found.'}</Banner>;
+  if (!data) return <Banner tone="error">{error || 'Không tìm thấy nhiệm vụ.'}</Banner>;
   const task = data.assignment;
   const done = task.status === 'on_time' || task.status === 'late';
   const latest = submissions.data?.submissions?.[0];
@@ -307,7 +307,7 @@ export function StudentProgressPage() {
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-sm">
         <div>
           <h1 className="text-2xl font-extrabold">Tiến độ của tôi</h1>
-          <p className="font-bold">{data.stats.assigned} được giao · {data.stats.completed} đã hoàn thành · {data.stats.pending} đang chờ · {data.stats.overdue} overdue</p>
+          <p className="font-bold">{data.stats.assigned} được giao · {data.stats.completed} đã hoàn thành · {data.stats.pending} đang chờ · {data.stats.overdue} quá hạn</p>
         </div>
         <Ring value={data.stats.completionRate} />
       </section>
