@@ -7,7 +7,7 @@ import { StickyNote } from '../../components/StickyNote';
 import { Banner, Button, Empty, Field, Loading, Modal, Ring, StatCard, StatusPill, WeekBars, controlClass } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
-import { fileUploadPayload } from '../../lib/fileUpload';
+import { uploadFileDirect } from '../../lib/fileUpload';
 import { playSubmissionCelebration } from '../../lib/sounds';
 import { formatLongDate, formatStamp, formatTime } from '../../lib/format';
 import { useQuery } from '../../lib/query';
@@ -169,7 +169,7 @@ export function StudentTaskPage() {
       const totalBytes = files.reduce((sum, item) => sum + item.size, 0);
       if (totalBytes > 10 * 1024 * 1024) throw new Error('All files together must be 10 MB or smaller.');
       const payload: Record<string, unknown> = { linkUrl: link.trim(), comment };
-      if (files.length) payload.files = await Promise.all(files.map((item) => fileUploadPayload(item)));
+      if (files.length) payload.uploadedFiles = await Promise.all(files.map((item) => uploadFileDirect(item, { purpose: 'submission', assignmentId: task.assignmentId })));
       if (!files.length && !link.trim()) throw new Error('Choose one or more files or add a link before submitting.');
       await api(`/api/student/assignments/${task.assignmentId}/submissions`, {
         method: 'POST',
