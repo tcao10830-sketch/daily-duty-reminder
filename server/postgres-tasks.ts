@@ -222,7 +222,7 @@ export async function deleteTask(teacherId: string, taskId: string) {
 }
 
 export async function studentTasks(studentId: string) {
-  const rows = await getPostgres().query(
+  const rows = await getPostgres().query<AssignmentRow>(
     `${assignmentSelect} WHERE a.student_id=$1 AND t.status='active' ORDER BY t.deadline_date,t.deadline_time`,
     [studentId],
   );
@@ -230,7 +230,7 @@ export async function studentTasks(studentId: string) {
 }
 
 export async function studentTask(studentId: string, assignmentId: string) {
-  const rows = await getPostgres().query(
+  const rows = await getPostgres().query<AssignmentRow>(
     `${assignmentSelect} WHERE a.id=$1 AND a.student_id=$2 AND t.status='active'`,
     [assignmentId, studentId],
   );
@@ -240,14 +240,14 @@ export async function studentTask(studentId: string, assignmentId: string) {
 
 export async function startAssignment(studentId: string, assignmentId: string) {
   return transaction(async (client) => {
-    const found = await client.query(
+    const found = await client.query<AssignmentRow>(
       `${assignmentSelect} WHERE a.id=$1 AND a.student_id=$2 AND t.status='active' FOR UPDATE OF a`,
       [assignmentId, studentId],
     );
     if (!found.rowCount) throw new HttpError(404, 'Task not found.');
     if (found.rows[0].completed_at) throw new HttpError(409, 'This task is already marked complete.');
     await client.query('UPDATE public.task_assignments SET in_progress=true WHERE id=$1', [assignmentId]);
-    const fresh = await client.query(`${assignmentSelect} WHERE a.id=$1`, [assignmentId]);
+    const fresh = await client.query<AssignmentRow>(`${assignmentSelect} WHERE a.id=$1`, [assignmentId]);
     return mapAssignment(fresh.rows[0]);
   });
 }
@@ -266,7 +266,7 @@ export async function completeAssignmentAt(studentId: string, assignmentId: stri
       [newId(), assignmentId, completedAt],
     );
     await client.query('UPDATE public.task_assignments SET in_progress=false WHERE id=$1', [assignmentId]);
-    const fresh = await client.query(`${assignmentSelect} WHERE a.id=$1`, [assignmentId]);
+    const fresh = await client.query<AssignmentRow>(`${assignmentSelect} WHERE a.id=$1`, [assignmentId]);
     const card = mapAssignment(fresh.rows[0]);
     const all = await client.query(`${assignmentSelect} WHERE t.class_id=$1 AND t.status='active'`, [row.class_id]);
     const cards = all.rows.map(mapAssignment);
@@ -297,14 +297,14 @@ export async function reopenAssignment(teacherId: string, assignmentId: string) 
     await client.query('UPDATE public.task_assignments SET in_progress=false WHERE id=$1', [assignmentId]);
     await insertNotification(client, row.student_id, 'task_updated', 'Task reopened',
       `${row.title} was reopened by your teacher.`, `${assignmentId}:reopened:${nowIso()}`);
-    const fresh = await client.query(`${assignmentSelect} WHERE a.id=$1`, [assignmentId]);
+    const fresh = await client.query<AssignmentRow>(`${assignmentSelect} WHERE a.id=$1`, [assignmentId]);
     return mapAssignment(fresh.rows[0]);
   });
 }
 
 export async function sweepDeadlines() {
   return transaction(async (client) => {
-    const result = await client.query(`${assignmentSelect} WHERE t.status='active' AND k.completed_at IS NULL`);
+    const result = await client.query<AssignmentRow>(`${assignmentSelect} WHERE t.status='active' AND k.completed_at IS NULL`);
     const now = Date.now();
     for (const row of result.rows) {
       const deadline = deadlineMs(String(row.deadline_date).slice(0,10), row.deadline_time);
