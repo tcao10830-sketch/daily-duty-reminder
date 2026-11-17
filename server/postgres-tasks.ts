@@ -1,8 +1,7 @@
 import { HttpError } from './errors.ts';
 import { getPostgres } from './postgres.ts';
 import { assignmentSelect, insertNotification, mapAssignment, newId, nowIso, requireText, transaction, type AssignmentCard, type AssignmentRow, type Priority, type NoteColor } from './postgres-store.ts';
-import { addDays, completionStatus, deadlineMs, isHm, isIsoDate, planInstances, todayInZone, type Recurrence } from './time.ts';
-import { hashPassword } from './auth.ts';
+import { deadlineMs, isHm, isIsoDate, planInstances, type Recurrence } from './time.ts';
 
 const COLORS = new Set<NoteColor>(['yellow', 'pink', 'blue', 'green', 'orange', 'purple']);
 const PRIORITIES = new Set<Priority>(['low', 'medium', 'high']);
