@@ -63,7 +63,7 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       throw new HttpError(400, 'Choose a valid upload purpose.');
     } },
     { method: 'GET', pattern: '/api/auth/setup', run: async () => store.authSetup() },
-    { method: 'POST', pattern: '/api/auth/login', run: async () => { const account = await store.login(body.email, body.password); const secret = requireSecret(); return { user: account, token: signToken({ sub: account.id, role: account.role }, secret) }; } },
+    { method: 'POST', pattern: '/api/auth/login', run: async () => { const secret = requireSecret(); const account = await store.login(body.email, body.password); return { user: account, token: signToken({ sub: account.id, role: account.role }, secret) }; } },
     { method: 'GET', pattern: '/api/teacher/permissions', run: async () => ({ canManageTeachers: await store.isPrimaryTeacher(requireUser(user, 'teacher').id) }) },
     { method: 'POST', pattern: '/api/teacher/teachers', run: async () => ({ user: await store.registerAdditionalTeacher(requireUser(user, 'teacher').id, body as any) }) },
     { method: 'GET', pattern: '/api/auth/me', run: async () => ({ user: requireUser(user) }) },
@@ -105,8 +105,8 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
   ];
 
   if (method === 'POST' && path === '/api/auth/register') {
-    const account = await store.registerTeacher(body as any);
     const secret = requireSecret();
+    const account = await store.registerTeacher(body as any);
     return { user: account, token: signToken({ sub: account.id, role: account.role }, secret) };
   }
   for (const route of routes) {
@@ -129,6 +129,13 @@ export default async function handler(req: Request, res: Response) {
     const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body)
       ? req.body as Record<string, unknown>
       : {};
+    // Setup status is public and must remain available even before JWT_SECRET is configured.
+    if (method === 'GET' && path === '/api/auth/setup') {
+      const result = await dispatch(method, path, body, null);
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(200).json(result);
+      return;
+    }
     const secret = requireSecret();
     const auth = req.headers.authorization;
     const bearer = typeof auth === 'string' && auth.startsWith('Bearer ') ? auth.slice(7) : '';
