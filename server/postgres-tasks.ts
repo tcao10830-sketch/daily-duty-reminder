@@ -1,6 +1,6 @@
 import { HttpError } from './errors.ts';
 import { getPostgres } from './postgres.ts';
-import { assignmentSelect, insertNotification, mapAssignment, newId, nowIso, requireText, transaction, type AssignmentCard, type Priority, type NoteColor } from './postgres-store.ts';
+import { assignmentSelect, insertNotification, mapAssignment, newId, nowIso, requireText, transaction, type AssignmentCard, type AssignmentRow, type Priority, type NoteColor } from './postgres-store.ts';
 import { addDays, completionStatus, deadlineMs, isHm, isIsoDate, planInstances, todayInZone, type Recurrence } from './time.ts';
 import { hashPassword } from './auth.ts';
 
@@ -54,7 +54,7 @@ async function summarizeTask(taskId: string) {
   );
   const task = result.rows[0];
   if (!task) throw new HttpError(404, 'Task not found.');
-  const assignments = await getPostgres().query(`${assignmentSelect} WHERE t.id = $1`, [taskId]);
+  const assignments = await getPostgres().query<AssignmentRow>(`${assignmentSelect} WHERE t.id = $1`, [taskId]);
   const cards: AssignmentCard[] = assignments.rows.map(mapAssignment);
   const completedCount = cards.filter((card) => card.status === 'on_time' || card.status === 'late').length;
   const pendingCount = cards.filter((card) => card.status === 'pending').length;
@@ -254,7 +254,7 @@ export async function startAssignment(studentId: string, assignmentId: string) {
 
 export async function completeAssignmentAt(studentId: string, assignmentId: string, completedAt: string) {
   return transaction(async (client) => {
-    const found = await client.query(
+    const found = await client.query<AssignmentRow>(
       `${assignmentSelect} WHERE a.id=$1 AND a.student_id=$2 AND t.status='active' FOR UPDATE OF a`,
       [assignmentId, studentId],
     );
@@ -268,7 +268,7 @@ export async function completeAssignmentAt(studentId: string, assignmentId: stri
     await client.query('UPDATE public.task_assignments SET in_progress=false WHERE id=$1', [assignmentId]);
     const fresh = await client.query<AssignmentRow>(`${assignmentSelect} WHERE a.id=$1`, [assignmentId]);
     const card = mapAssignment(fresh.rows[0]);
-    const all = await client.query(`${assignmentSelect} WHERE t.class_id=$1 AND t.status='active'`, [row.class_id]);
+    const all = await client.query<AssignmentRow>(`${assignmentSelect} WHERE t.class_id=$1 AND t.status='active'`, [row.class_id]);
     const cards = all.rows.map(mapAssignment);
     const completed = cards.filter((item) => item.status === 'on_time' || item.status === 'late').length;
     await insertNotification(client, row.teacher_id, 'task_completed', 'Student completed a task',
