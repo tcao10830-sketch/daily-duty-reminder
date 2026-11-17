@@ -44,13 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    const token = getToken();
-    if (!user || !token) return;
-    const source = new EventSource(`/api/events?token=${encodeURIComponent(token)}`);
-    source.onmessage = () => setTick((value) => value + 1);
-    return () => source.close();
-  }, [user]);
+  // Vercel serverless functions do not keep SSE connections alive.
+  // Visible-tab polling above remains the cross-instance refresh mechanism.
 
   async function login(email: string, password: string) {
     const result = await api<{ token: string; user: User }>('/api/auth/login', {
