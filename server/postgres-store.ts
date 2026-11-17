@@ -34,7 +34,7 @@ export type AssignmentCard = {
   status: CompletionStatus;
 };
 
-type AssignmentRow = QueryResultRow & {
+export type AssignmentRow = QueryResultRow & {
   assignment_id: string;
   task_id: string;
   series_id: string;
