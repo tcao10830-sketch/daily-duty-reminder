@@ -51,7 +51,7 @@ export async function teacherOverview(teacherId: string) {
     getPostgres().query('SELECT id, name FROM public.classes WHERE teacher_id=$1 ORDER BY name', [teacherId]),
     getPostgres().query('SELECT COUNT(*)::int AS n FROM public.class_members m JOIN public.classes c ON c.id=m.class_id WHERE c.teacher_id=$1', [teacherId]),
     getPostgres().query("SELECT id FROM public.tasks WHERE teacher_id=$1 AND status='active'", [teacherId]),
-    getPostgres().query(`${assignmentSelect} WHERE t.teacher_id=$1 AND t.status='active'`, [teacherId]),
+    getPostgres().query<AssignmentRow>(`${assignmentSelect} WHERE t.teacher_id=$1 AND t.status='active'`, [teacherId]),
   ]);
   const cards: AssignmentCard[] = rows.rows.map(mapAssignment);
   const stats = statsFrom(cards);
