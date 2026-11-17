@@ -1,6 +1,6 @@
 import { HttpError } from './errors.ts';
 import { getPostgres } from './postgres.ts';
-import { assignmentSelect, mapAssignment, type AssignmentCard } from './postgres-store.ts';
+import { assignmentSelect, mapAssignment, type AssignmentRow, type AssignmentCard } from './postgres-store.ts';
 import { addDays, todayInZone } from './time.ts';
 import { sweepDeadlines } from './postgres-tasks.ts';
 
@@ -30,7 +30,7 @@ function statsFrom(cards: AssignmentCard[]) {
 }
 
 async function classStats(classId: string) {
-  const result = await getPostgres().query(
+  const result = await getPostgres().query<AssignmentRow>(
     `${assignmentSelect} WHERE t.class_id=$1 AND t.status='active'`,
     [classId],
   );
@@ -95,7 +95,7 @@ export async function teacherOverview(teacherId: string) {
 
 export async function studentOverview(studentId: string) {
   await sweepDeadlines();
-  const rows = await getPostgres().query(
+  const rows = await getPostgres().query<AssignmentRow>(
     `${assignmentSelect} WHERE a.student_id=$1 AND t.status='active' ORDER BY t.deadline_date,t.deadline_time`,
     [studentId],
   );
