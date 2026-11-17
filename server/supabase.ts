@@ -97,7 +97,7 @@ export async function createUploadTicket(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ upsert: false }),
+      body: JSON.stringify({}),
     },
   );
   const { url } = config();
