@@ -6,7 +6,22 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["server"]
+  "include": [
+    "api/**/*.ts",
+    "server/auth.ts",
+    "server/errors.ts",
+    "server/time.ts",
+    "server/supabase.ts",
+    "server/postgres.ts",
+    "server/postgres-store.ts",
+    "server/postgres-auth.ts",
+    "server/postgres-classes.ts",
+    "server/postgres-reports.ts",
+    "server/postgres-store-api.ts",
+    "server/postgres-tasks.ts",
+    "server/access.pg.ts"
+  ]
 }

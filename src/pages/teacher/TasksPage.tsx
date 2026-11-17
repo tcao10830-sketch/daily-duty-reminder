@@ -4,7 +4,7 @@ import { StickyNote } from '../../components/StickyNote';
 import { TaskForm, emptyTaskForm, type TaskFormValues } from '../../components/TaskForm';
 import { Banner, Button, Empty, Loading, StatusPill } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
-import { fileUploadPayload } from '../../lib/fileUpload';
+import { uploadFileDirect } from '../../lib/fileUpload';
 import { SubmissionReview } from '../../components/SubmissionReview';
 import { api } from '../../lib/api';
 import { formatStamp } from '../../lib/format';
@@ -175,7 +175,7 @@ export function TaskDetailPage() {
     setMaterialError('');
     try {
       const payload: Record<string, unknown> = { label: materialLabel, linkUrl: materialLink.trim() };
-      if (materialFile) Object.assign(payload, await fileUploadPayload(materialFile));
+      if (materialFile) payload.uploadedFile = await uploadFileDirect(materialFile, { purpose: 'material', taskId: id });
       if (!materialFile && !materialLink.trim()) throw new Error('Choose a file or add a link.');
       await api(`/api/teacher/tasks/${id}/materials`, { method: 'POST', body: JSON.stringify(payload) });
       setMaterialFile(null);

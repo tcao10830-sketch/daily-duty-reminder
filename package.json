@@ -14,7 +14,8 @@
   "dependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.5"
+    "react-router-dom": "^7.9.5",
+    "pg": "8.23.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.17",
@@ -24,6 +25,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
-    "vite": "^7.1.12"
+    "vite": "^7.1.12",
+    "@types/pg": "8.23.1"
   }
 }

@@ -53,6 +53,68 @@ function safeName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || 'upload';
 }
 
+const allowedMimeTypes = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+function readUploadedFile(value: unknown, folder: string) {
+  if (!value || typeof value !== 'object') throw new HttpError(400, 'Uploaded file metadata is missing.');
+  const item = value as Record<string, unknown>;
+  const path = String(item.path || '');
+  const name = String(item.name || '').trim().slice(0, 160);
+  const mime = String(item.mime || '').toLowerCase();
+  const size = Number(item.size);
+  if (!path.startsWith(`${folder}/`) || path.includes('..') || !name || !allowedMimeTypes.has(mime) ||
+      !Number.isInteger(size) || size < 1 || size > maxBytes) {
+    throw new HttpError(400, 'Uploaded file metadata is invalid.');
+  }
+  return { path, name, mime, size };
+}
+
+/** Create a one-object upload URL so the browser sends file bytes straight to Supabase Storage. */
+export async function createUploadTicket(
+  folder: string,
+  input: { fileName: unknown; mimeType: unknown; size: unknown },
+) {
+  const fileName = String(input.fileName || '').trim();
+  const mime = String(input.mimeType || '').toLowerCase();
+  const size = Number(input.size);
+  if (!fileName || !allowedMimeTypes.has(mime)) {
+    throw new HttpError(400, 'Supported files: PDF, DOC, DOCX, JPG, PNG and WEBP.');
+  }
+  if (!Number.isInteger(size) || size < 1 || size > maxBytes) {
+    throw new HttpError(413, 'Each file must be 10 MB or smaller.');
+  }
+  const path = `${folder}/${randomUUID()}-${safeName(fileName)}`;
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  const result = await request(
+    `/storage/v1/object/upload/sign/${bucket}/${encodedPath}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    },
+  );
+  const { url } = config();
+  let uploadUrl = String(result?.url || '');
+  if (!uploadUrl) throw new HttpError(502, 'Could not create a secure upload URL.');
+  if (!uploadUrl.startsWith('http')) {
+    uploadUrl = uploadUrl.startsWith('/storage/v1')
+      ? `${url}${uploadUrl}`
+      : `${url}/storage/v1${uploadUrl.startsWith('/') ? '' : '/'}${uploadUrl}`;
+  }
+  if (result?.token && !uploadUrl.includes('token=')) {
+    const separator = uploadUrl.includes('?') ? '&' : '?';
+    uploadUrl = `${uploadUrl}${separator}token=${encodeURIComponent(String(result.token))}`;
+  }
+  return { path, uploadUrl };
+}
+
 function storedPaths(value: string | null): string[] {
   if (!value) return [];
   try {
@@ -75,15 +137,7 @@ function decodeFile(body: Record<string, unknown>) {
   const mime = String(body.mimeType || '').toLowerCase();
   const encoded = String(body.base64 || '');
   if (!name || !encoded) throw new HttpError(400, 'Choose a file to upload.');
-  const allowed = new Set([
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-  ]);
-  if (!allowed.has(mime)) throw new HttpError(400, 'Supported files: PDF, DOC, DOCX, JPG, PNG and WEBP.');
+  if (!allowedMimeTypes.has(mime)) throw new HttpError(400, 'Supported files: PDF, DOC, DOCX, JPG, PNG and WEBP.');
   const base64 = encoded.replace(/^data:[^;]+;base64,/, '');
   if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) throw new HttpError(400, 'Invalid file data.');
   const buffer = Buffer.from(base64, 'base64');
@@ -160,7 +214,8 @@ export async function listMaterials(taskId: string) {
 export async function createMaterial(taskId: string, teacherId: string, body: Record<string, unknown>) {
   const link = String(body.linkUrl || '').trim();
   let file: { path: string; name: string; mime: string; size: number } | null = null;
-  if (body.base64) file = await uploadFile(body, `materials/${taskId}`);
+  if (body.uploadedFile) file = readUploadedFile(body.uploadedFile, `materials/${taskId}`);
+  else if (body.base64) file = await uploadFile(body, `materials/${taskId}`);
   if (!file && !/^https?:\/\//i.test(link)) throw new HttpError(400, 'Add a file or a valid https:// link.');
   return await insert('task_materials', {
     task_id: taskId,
@@ -175,8 +230,11 @@ export async function createMaterial(taskId: string, teacherId: string, body: Re
 
 export async function createSubmission(assignmentId: string, studentId: string, body: Record<string, unknown>, expiresAt: string) {
   const link = String(body.linkUrl || '').trim();
+  const directFiles = Array.isArray(body.uploadedFiles)
+    ? body.uploadedFiles.map((item) => readUploadedFile(item, `submissions/${assignmentId}`))
+    : [];
   const suppliedFiles = Array.isArray(body.files) ? body.files as Record<string, unknown>[] : [];
-  const files = suppliedFiles.length ? await uploadMany(suppliedFiles, `submissions/${assignmentId}`) :
+  const files = directFiles.length ? directFiles : suppliedFiles.length ? await uploadMany(suppliedFiles, `submissions/${assignmentId}`) :
     body.base64 ? [await uploadFile(body, `submissions/${assignmentId}`)] : [];
   if (!files.length && !/^https?:\/\//i.test(link)) throw new HttpError(400, 'Submit one or more files or a valid https:// link.');
   const total = files.reduce((sum, item) => sum + item.size, 0);
@@ -213,7 +271,7 @@ export async function listSubmissions(assignmentId: string, studentId?: string) 
 export async function getSubmission(submissionId: string): Promise<StoredFile & { assignment_id: string; student_id: string }> {
   const items = await rows('assignment_submissions', `id=eq.${encodeURIComponent(submissionId)}&select=*&limit=1`);
   if (!items[0]) throw new HttpError(404, 'Submission not found.');
-  return items[0];
+  return items[0] as StoredFile & { assignment_id: string; student_id: string };
 }
 
 export async function reviewSubmission(submissionId: string, teacherId: string, status: 'approved' | 'revision_requested', feedback: string) {
