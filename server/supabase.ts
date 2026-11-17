@@ -213,7 +213,7 @@ export async function listSubmissions(assignmentId: string, studentId?: string) 
 export async function getSubmission(submissionId: string): Promise<StoredFile & { assignment_id: string; student_id: string }> {
   const items = await rows('assignment_submissions', `id=eq.${encodeURIComponent(submissionId)}&select=*&limit=1`);
   if (!items[0]) throw new HttpError(404, 'Submission not found.');
-  return items[0];
+  return items[0] as StoredFile & { assignment_id: string; student_id: string };
 }
 
 export async function reviewSubmission(submissionId: string, teacherId: string, status: 'approved' | 'revision_requested', feedback: string) {
