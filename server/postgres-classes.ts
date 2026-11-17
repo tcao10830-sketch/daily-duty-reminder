@@ -1,5 +1,6 @@
 import { HttpError } from './errors.ts';
 import { getPostgres } from './postgres.ts';
+import { transaction } from './postgres-store.ts';
 import { assignmentSelect, mapAssignment, newId, nowIso, requireText, type AssignmentCard } from './postgres-store.ts';
 import { hashPassword } from './auth.ts';
 
@@ -133,20 +134,21 @@ export async function addStudent(
   if (!email.includes('@')) throw new HttpError(400, 'Enter a valid email.');
   if (password.length < 6) throw new HttpError(400, 'Password must be at least 6 characters.');
   const passwordHash = await hashPassword(password);
-  const client = getPostgres();
-  const classCheck = await client.query('SELECT id FROM public.classes WHERE id = $1 AND teacher_id = $2', [classId, teacherId]);
-  if (!classCheck.rowCount) throw new HttpError(404, 'Class not found.');
   const studentId = newId();
   const created = nowIso();
   try {
-    await client.query(
-      'INSERT INTO public.users (id, email, password_hash, name, role, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
-      [studentId, email, passwordHash, name, 'student', created],
-    );
-    await client.query(
-      'INSERT INTO public.class_members (class_id, student_id, created_at) VALUES ($1, $2, $3)',
-      [classId, studentId, created],
-    );
+    await transaction(async (client) => {
+      const classCheck = await client.query('SELECT id FROM public.classes WHERE id = $1 AND teacher_id = $2 FOR UPDATE', [classId, teacherId]);
+      if (!classCheck.rowCount) throw new HttpError(404, 'Class not found.');
+      await client.query(
+        'INSERT INTO public.users (id, email, password_hash, name, role, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+        [studentId, email, passwordHash, name, 'student', created],
+      );
+      await client.query(
+        'INSERT INTO public.class_members (class_id, student_id, created_at) VALUES ($1, $2, $3)',
+        [classId, studentId, created],
+      );
+    });
   } catch (error) {
     if ((error as { code?: string })?.code === '23505') throw new HttpError(400, 'That email is already registered.');
     throw error;
