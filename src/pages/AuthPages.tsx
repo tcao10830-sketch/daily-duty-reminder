@@ -12,7 +12,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [hasTeacher, setHasTeacher] = useState<boolean | null>(null);
-  useEffect(() => { api<{ hasTeacher: boolean }>('/api/auth/setup').then((result) => setHasTeacher(result.hasTeacher)).catch(() => setHasTeacher(true)); }, []);
+  useEffect(() => { api<{ hasTeacher: boolean }>('/api/auth/setup').then((result) => setHasTeacher(result.hasTeacher)).catch(() => setHasTeacher(false)); }, []);
 
   async function submit(nextEmail = email, nextPassword = password) {
     setBusy(true);
@@ -70,7 +70,7 @@ export function RegisterPage() {
   const [busy, setBusy] = useState(false);
   const [setupReady, setSetupReady] = useState(false);
   const [hasTeacher, setHasTeacher] = useState(true);
-  useEffect(() => { api<{ hasTeacher: boolean }>('/api/auth/setup').then((result) => setHasTeacher(result.hasTeacher)).catch(() => setHasTeacher(true)).finally(() => setSetupReady(true)); }, []);
+  useEffect(() => { api<{ hasTeacher: boolean }>('/api/auth/setup').then((result) => setHasTeacher(result.hasTeacher)).catch(() => setHasTeacher(false)).finally(() => setSetupReady(true)); }, []);
   if (!setupReady) return <AuthCard title="Checking setup" subtitle="Please wait…"><p className="font-bold text-slate-500">Loading account setup.</p></AuthCard>;
   if (hasTeacher) return <AuthCard title="Registration closed" subtitle="Teacher accounts are managed by the first teacher."><Banner tone="error">A teacher account already exists. Ask the first teacher to create an account for you.</Banner><p className="mt-4 text-sm font-bold"><Link className="text-[#315fbf]" to="/login">Back to log in</Link></p></AuthCard>;
 
