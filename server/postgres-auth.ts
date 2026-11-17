@@ -1,6 +1,7 @@
 import { hashPassword, verifyPassword } from './auth.ts';
 import { HttpError } from './errors.ts';
-import { getPostgres, transaction } from './postgres.ts';
+import { getPostgres } from './postgres.ts';
+import { transaction } from './postgres-store.ts';
 import { newId, nowIso, clean, requireText, type PublicUser } from './postgres-store.ts';
 
 type UserRow = PublicUser & { password_hash: string };
