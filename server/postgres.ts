@@ -1,42 +1,48 @@
-import postgres from 'postgres';
+import { Pool } from 'pg';
 
 /**
- * Lazy Postgres client for serverless runtimes.
+ * PostgreSQL pool for Vercel's Node.js serverless runtime.
  *
- * Vercel functions use Supabase's shared transaction pooler. Keep one
- * connection per warm function instance and disable prepared statements,
- * which are not supported by the transaction pooler.
+ * Use the Supabase shared transaction-pooler connection string (port 6543).
+ * node-postgres sends unnamed parameterized statements unless a query config
+ * explicitly supplies "name"; do not add named prepared statements here.
  *
- * This module is intentionally lazy: local development and the existing
- * Render/SQLite runtime do not connect to Postgres unless the new data layer
- * explicitly calls getPostgres().
+ * Keep one client per warm function instance to avoid multiplying connections.
+ * The pool is lazy so importing this module never connects during build time.
  */
-let client: ReturnType<typeof postgres> | undefined;
+let pool: Pool | undefined;
 
-export function getPostgres(): ReturnType<typeof postgres> {
-  if (client) return client;
+export function getPostgres(): Pool {
+  if (pool) return pool;
 
   const connectionString = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
   if (!connectionString) {
     throw new Error('DATABASE_URL (Supabase transaction-pooler URL) is not configured.');
   }
 
-  client = postgres(connectionString, {
+  pool = new Pool({
+    connectionString,
     max: 1,
-    prepare: false,
-    ssl: 'require',
-    connect_timeout: 10,
-    idle_timeout: 20,
-    max_lifetime: 60 * 30,
+    idleTimeoutMillis: 20_000,
+    connectionTimeoutMillis: 10_000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
+    ssl: { rejectUnauthorized: false },
   });
 
-  return client;
+  pool.on('error', (error) => {
+    // Idle sockets can be closed while a serverless instance is frozen.
+    // node-postgres removes errored idle clients; log without leaking config.
+    console.error('PostgreSQL idle connection error:', error.message);
+  });
+
+  return pool;
 }
 
-/** Close the client in scripts/tests; serverless handlers should reuse it. */
+/** Close the pool in scripts/tests; do not call this after each serverless request. */
 export async function closePostgres(): Promise<void> {
-  if (!client) return;
-  const current = client;
-  client = undefined;
-  await current.end({ timeout: 5 });
+  if (!pool) return;
+  const current = pool;
+  pool = undefined;
+  await current.end();
 }
