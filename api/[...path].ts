@@ -45,6 +45,23 @@ function requireUser(user: store.PublicUser | null, role?: store.Role): store.Pu
 
 async function dispatch(method: string, path: string, body: Record<string, unknown>, user: store.PublicUser | null) {
   const routes: { method: string; pattern: string; run: (params: Record<string, string>) => Promise<unknown> }[] = [
+    { method: 'POST', pattern: '/api/storage/sign-upload', run: async () => {
+      const purpose = String(body.purpose || '');
+      const file = { fileName: body.fileName, mimeType: body.mimeType, size: body.size };
+      if (purpose === 'material') {
+        const teacher = requireUser(user, 'teacher');
+        const taskId = String(body.taskId || '');
+        await store.getTeacherTask(teacher.id, taskId);
+        return cloud.createUploadTicket(`materials/${taskId}`, file);
+      }
+      if (purpose === 'submission') {
+        const student = requireUser(user, 'student');
+        const assignmentId = String(body.assignmentId || '');
+        await store.studentTask(student.id, assignmentId);
+        return cloud.createUploadTicket(`submissions/${assignmentId}`, file);
+      }
+      throw new HttpError(400, 'Choose a valid upload purpose.');
+    } },
     { method: 'GET', pattern: '/api/auth/setup', run: async () => store.authSetup() },
     { method: 'POST', pattern: '/api/auth/login', run: async () => { const account = await store.login(body.email, body.password); const secret = requireSecret(); return { user: account, token: signToken({ sub: account.id, role: account.role }, secret) }; } },
     { method: 'GET', pattern: '/api/teacher/permissions', run: async () => ({ canManageTeachers: await store.isPrimaryTeacher(requireUser(user, 'teacher').id) }) },
