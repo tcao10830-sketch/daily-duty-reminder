@@ -286,7 +286,7 @@ export async function completeAssignment(studentId: string, assignmentId: string
 
 export async function reopenAssignment(teacherId: string, assignmentId: string) {
   return transaction(async (client) => {
-    const found = await client.query(
+    const found = await client.query<AssignmentRow>(
       `${assignmentSelect} WHERE a.id=$1 AND t.teacher_id=$2 FOR UPDATE OF a`,
       [assignmentId, teacherId],
     );
