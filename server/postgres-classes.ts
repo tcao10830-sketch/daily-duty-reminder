@@ -1,7 +1,7 @@
 import { HttpError } from './errors.ts';
 import { getPostgres } from './postgres.ts';
 import { transaction } from './postgres-store.ts';
-import { assignmentSelect, mapAssignment, newId, nowIso, requireText, type AssignmentCard } from './postgres-store.ts';
+import { assignmentSelect, mapAssignment, type AssignmentRow, newId, nowIso, requireText, type AssignmentCard } from './postgres-store.ts';
 import { hashPassword } from './auth.ts';
 
 type StudentRow = { id: string; name: string; email?: string };
@@ -21,7 +21,7 @@ function stats(cards: AssignmentCard[]) {
 }
 
 async function classCards(classId: string): Promise<AssignmentCard[]> {
-  const result = await getPostgres().query(
+  const result = await getPostgres().query<AssignmentRow>(
     `${assignmentSelect} WHERE t.class_id = $1 AND t.status = 'active'`,
     [classId],
   );
