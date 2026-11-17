@@ -79,13 +79,18 @@ export async function renameClass(teacherId: string, classId: string, nameRaw: u
 }
 
 export async function deleteClass(teacherId: string, classId: string) {
-  const result = await getPostgres().query(
-    'DELETE FROM public.classes WHERE id = $1 AND teacher_id = $2 RETURNING id',
-    [classId, teacherId],
-  );
-  if (!result.rowCount) throw new HttpError(404, 'Class not found.');
-  // Membership and task history cascade from the class; student accounts are deliberately retained
-  // if they are referenced by other application data or are later re-enrolled.
+  await transaction(async (client) => {
+    const owned = await client.query(
+      'SELECT id FROM public.classes WHERE id = $1 AND teacher_id = $2 FOR UPDATE',
+      [classId, teacherId],
+    );
+    if (!owned.rowCount) throw new HttpError(404, 'Class not found.');
+    const students = await client.query('SELECT student_id FROM public.class_members WHERE class_id = $1', [classId]);
+    await client.query('DELETE FROM public.classes WHERE id = $1', [classId]);
+    for (const student of students.rows) {
+      await client.query("DELETE FROM public.users WHERE id = $1 AND role = 'student'", [student.student_id]);
+    }
+  });
   return { ok: true };
 }
 
