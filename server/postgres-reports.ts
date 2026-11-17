@@ -121,7 +121,7 @@ export async function studentProgress(teacherId: string, studentId: string) {
   );
   const student = studentResult.rows[0];
   if (!student) throw new HttpError(404, 'Student not found.');
-  const rows = await getPostgres().query(
+  const rows = await getPostgres().query<AssignmentRow>(
     `${assignmentSelect} WHERE a.student_id=$1 AND t.status='active' ORDER BY t.deadline_date DESC`,
     [studentId],
   );
