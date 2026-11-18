@@ -88,51 +88,85 @@ function NoteGrid({ title, notes, empty }: { title: string; notes: AssignmentCar
 
 export function MyTasksPage() {
   const { data, error, loading } = useQuery<{ assignments: AssignmentCard[] }>('/api/student/tasks');
-  const [filter, setFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   if (loading && !data) return <Loading />;
   if (error) return <Banner tone="error">{error}</Banner>;
-  const notes = (data?.assignments ?? []).filter((note) => {
-    if (filter === 'todo') return note.status === 'pending' && !note.inProgress;
-    if (filter === 'progress') return note.status === 'pending' && note.inProgress;
-    if (filter === 'done') return note.status === 'on_time' || note.status === 'late';
-    if (filter === 'overdue') return note.status === 'overdue';
-    return true;
-  });
-  const filters = [
-    ['all', 'All'],
-    ['todo', 'To Do'],
-    ['progress', 'In Progress'],
-    ['done', 'Completed'],
-    ['overdue', 'Overdue'],
-  ];
+  const now = Date.now();
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const endOfToday = startOfToday + 24 * 60 * 60 * 1000;
+  const endOfWeek = endOfToday + 7 * 24 * 60 * 60 * 1000;
+  const notes = (data?.assignments ?? [])
+    .filter((note) => {
+      const deadline = new Date(note.deadlineAt).getTime();
+      if (dateFilter === 'today') return deadline >= startOfToday && deadline < endOfToday;
+      if (dateFilter === 'week') return deadline >= startOfToday && deadline < endOfWeek;
+      if (dateFilter === 'later') return deadline >= endOfWeek;
+      return true;
+    })
+    .filter((note) => {
+      if (statusFilter === 'pending') return note.status === 'pending';
+      if (statusFilter === 'upcoming') return note.status === 'pending' && new Date(note.deadlineAt).getTime() - now > 48 * 60 * 60 * 1000;
+      if (statusFilter === 'overdue') return note.status === 'overdue';
+      return true;
+    })
+    .filter((note) => priorityFilter === 'all' || note.priority === priorityFilter)
+    .sort((a, b) => {
+      const rank = (note: AssignmentCard) => note.status === 'overdue' ? 0 : note.status === 'pending' && new Date(note.deadlineAt).getTime() - now <= 48 * 60 * 60 * 1000 ? 1 : note.status === 'pending' ? 2 : 3;
+      return rank(a) - rank(b) || new Date(a.deadlineAt).getTime() - new Date(b.deadlineAt).getTime();
+    });
   return (
     <div className="grid gap-4">
-      <div className="flex gap-2 overflow-x-auto">
-        {filters.map(([id, label]) => (
-          <button key={id} type="button" onClick={() => setFilter(id)} className={`shrink-0 rounded-full px-4 py-2 font-extrabold ${filter === id ? 'bg-[#FFD84D]' : 'bg-white'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
-      {notes.length === 0 ? <Empty>No tasks in this list.</Empty> : (
+      <section className="grid gap-3 rounded-3xl bg-white p-4 shadow-sm sm:grid-cols-3">
+        <label className="grid gap-1 text-sm font-extrabold text-[#34445e]">Deadline date
+          <select className={controlClass} value={dateFilter} onChange={(event) => setDateFilter(event.target.value)}>
+            <option value="all">All dates</option>
+            <option value="today">Due today</option>
+            <option value="week">Next 7 days</option>
+            <option value="later">After 7 days</option>
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-extrabold text-[#34445e]">Status
+          <select className={controlClass} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="upcoming">Upcoming (over 48 hours)</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-extrabold text-[#34445e]">Priority
+          <select className={controlClass} value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)}>
+            <option value="all">All priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+      </section>
+      {notes.length === 0 ? <Empty>No tasks match these filters.</Empty> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {notes.map((note) => (
-            <StickyNote
-              key={note.assignmentId}
-              id={note.assignmentId}
-              href={`/student/tasks/${note.assignmentId}`}
-              title={note.title}
-              description={note.description}
-              className={note.className}
-              assignmentDate={note.assignmentDate}
-              deadlineDate={note.deadlineDate}
-              deadlineTime={note.deadlineTime}
-              deadlineAt={note.deadlineAt}
-              priority={note.priority}
-              penalty={note.penalty}
-              color={note.color}
-              status={note.status}
-            />
+            <div key={note.assignmentId} className="relative">
+              {note.status === 'overdue' ? <span className="absolute -top-2 -right-2 z-10 rounded-full bg-red-600 px-3 py-1 text-sm font-black text-white shadow-md" aria-label="Overdue warning">⚠ OVERDUE</span> : null}
+              {note.status === 'pending' && new Date(note.deadlineAt).getTime() - now <= 48 * 60 * 60 * 1000 ? <span className="absolute -top-2 -right-2 z-10 rounded-full bg-amber-400 px-3 py-1 text-sm font-black text-[#513b12] shadow-md">⏰ DUE SOON</span> : null}
+              <StickyNote
+                id={note.assignmentId}
+                href={`/student/tasks/${note.assignmentId}`}
+                title={note.title}
+                description={note.description}
+                className={note.className}
+                assignmentDate={note.assignmentDate}
+                deadlineDate={note.deadlineDate}
+                deadlineTime={note.deadlineTime}
+                deadlineAt={note.deadlineAt}
+                priority={note.priority}
+                penalty={note.penalty}
+                color={note.color}
+                status={note.status}
+              />
+            </div>
           ))}
         </div>
       )}
