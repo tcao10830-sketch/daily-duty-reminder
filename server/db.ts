@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS pencil_ledger (
   id TEXT PRIMARY KEY,
   student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   teacher_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-  assignment_id TEXT REFERENCES task_assignments(id) ON DELETE CASCADE,
+  assignment_id TEXT,
   source TEXT NOT NULL CHECK (source IN ('early', 'quality', 'streak', 'adjustment', 'streak_reversal')),
   amount INTEGER NOT NULL,
   note TEXT NOT NULL DEFAULT '',
@@ -149,6 +149,34 @@ CREATE TABLE IF NOT EXISTS pencil_ledger (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pencil_ledger_once
   ON pencil_ledger(student_id, assignment_id, source) WHERE assignment_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_pencil_ledger_student ON pencil_ledger(student_id, created_at);
+
+// Keep earned pencil history even if a teacher later deletes its original task.
+const ledgerForeignKeys = db.prepare('PRAGMA foreign_key_list(pencil_ledger)').all() as { table: string; on_delete: string }[];
+if (ledgerForeignKeys.some((key) => key.table === 'task_assignments' && key.on_delete.toUpperCase() === 'CASCADE')) {
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec(`
+    BEGIN;
+    ALTER TABLE pencil_ledger RENAME TO pencil_ledger_old;
+    CREATE TABLE pencil_ledger (
+      id TEXT PRIMARY KEY,
+      student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      teacher_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      assignment_id TEXT,
+      source TEXT NOT NULL CHECK (source IN ('early', 'quality', 'streak', 'adjustment', 'streak_reversal')),
+      amount INTEGER NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+    INSERT INTO pencil_ledger (id, student_id, teacher_id, assignment_id, source, amount, note, created_at)
+      SELECT id, student_id, teacher_id, assignment_id, source, amount, note, created_at FROM pencil_ledger_old;
+    DROP TABLE pencil_ledger_old;
+    CREATE UNIQUE INDEX idx_pencil_ledger_once
+      ON pencil_ledger(student_id, assignment_id, source) WHERE assignment_id IS NOT NULL;
+    CREATE INDEX idx_pencil_ledger_student ON pencil_ledger(student_id, created_at);
+    COMMIT;
+  `);
+  db.exec('PRAGMA foreign_keys = ON');
+}
 CREATE TABLE IF NOT EXISTS streak_events (
   assignment_id TEXT PRIMARY KEY REFERENCES task_assignments(id) ON DELETE CASCADE,
   student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
