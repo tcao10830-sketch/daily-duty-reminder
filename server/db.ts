@@ -128,6 +128,11 @@ CREATE INDEX IF NOT EXISTS idx_assign_student ON task_assignments(student_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at);
 `);
 
+// Persist submission and revision timing with each assignment.
+const assignmentColumns = db.prepare('PRAGMA table_info(task_assignments)').all() as { name: string }[];
+if (!assignmentColumns.some((column) => column.name === 'submitted_at')) db.exec('ALTER TABLE task_assignments ADD COLUMN submitted_at TEXT');
+if (!assignmentColumns.some((column) => column.name === 'revision_deadline_at')) db.exec('ALTER TABLE task_assignments ADD COLUMN revision_deadline_at TEXT');
+
 async function persistSnapshot(): Promise<void> {
   if (!cloudPersistenceEnabled) return;
   const snapshotPath = join(dataDir, `snapshot-${randomUUID()}.sqlite`);
