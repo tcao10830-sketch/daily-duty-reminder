@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { HttpError } from './errors.ts';
 
 const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'task-files';
+const databaseSnapshotBucket = process.env.SUPABASE_DATABASE_BUCKET || 'app-database-backups';
 const maxBytes = 10 * 1024 * 1024;
 
 type StoredFile = {
@@ -62,7 +63,7 @@ function storageAuthHeaders(key: string, legacy: boolean): Record<string, string
 export async function downloadDatabaseSnapshot(): Promise<Buffer | null> {
   const { url, key, legacy } = config();
   const objectPath = databaseSnapshotPath.split('/').map(encodeURIComponent).join('/');
-  const response = await fetch(`${url}/storage/v1/object/${bucket}/${objectPath}`, {
+  const response = await fetch(`${url}/storage/v1/object/${databaseSnapshotBucket}/${objectPath}`, {
     headers: storageAuthHeaders(key, legacy),
   });
   if (!response.ok) {
@@ -78,7 +79,7 @@ export async function downloadDatabaseSnapshot(): Promise<Buffer | null> {
 export async function uploadDatabaseSnapshot(snapshot: Buffer): Promise<void> {
   const { url, key, legacy } = config();
   const objectPath = databaseSnapshotPath.split('/').map(encodeURIComponent).join('/');
-  const response = await fetch(`${url}/storage/v1/object/${bucket}/${objectPath}`, {
+  const response = await fetch(`${url}/storage/v1/object/${databaseSnapshotBucket}/${objectPath}`, {
     method: 'POST',
     headers: {
       ...storageAuthHeaders(key, legacy),
