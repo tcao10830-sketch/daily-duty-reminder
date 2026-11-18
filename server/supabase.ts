@@ -65,9 +65,10 @@ export async function downloadDatabaseSnapshot(): Promise<Buffer | null> {
   const response = await fetch(`${url}/storage/v1/object/${bucket}/${objectPath}`, {
     headers: storageAuthHeaders(key, legacy),
   });
-  if (response.status === 404) return null;
   if (!response.ok) {
-    console.error('Database snapshot download failed:', response.status);
+    const detail = await response.text();
+    if (response.status === 404 || (response.status === 400 && /object not found|not_found|404/i.test(detail))) return null;
+    console.error('Database snapshot download failed:', response.status, detail.slice(0, 500));
     throw new Error('Could not restore the application database from cloud storage.');
   }
   return Buffer.from(await response.arrayBuffer());
@@ -85,7 +86,7 @@ export async function uploadDatabaseSnapshot(snapshot: Buffer): Promise<void> {
       'x-upsert': 'true',
       'Cache-Control': 'no-store',
     },
-    body: snapshot,
+    body: snapshot as unknown as BodyInit,
   });
   if (!response.ok) {
     const detail = await response.text();
