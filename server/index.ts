@@ -10,7 +10,7 @@ import { sweepDeadlines } from './store.ts';
 import * as store from './store.ts';
 import * as cloud from './supabase.ts';
 import { getTeacherAssignment } from './access.ts';
-import { adjustStudentPencils, awardQualityPencils, resolveStreakReview, saveEarlyRewardRules, studentRewards, teacherRewards } from './rewards.ts';
+import { adjustStudentPencils, awardQualityPencils, resetStudentStreak, resolveStreakReview, saveEarlyRewardRules, studentRewards, teacherRewards } from './rewards.ts';
 
 const port = Number(process.env.PORT ?? 8787);
 const dev = process.env.DEV === '1';
@@ -101,6 +101,7 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'GET', pattern: '/api/teacher/rewards', run: async () => teacherRewards(requireUser(user, 'teacher').id) },
     { method: 'PUT', pattern: '/api/teacher/rewards/early-rules', run: async () => saveEarlyRewardRules(requireUser(user, 'teacher').id, body.rules) },
     { method: 'POST', pattern: '/api/teacher/rewards/students/:id/adjust', run: async (params) => adjustStudentPencils(requireUser(user, 'teacher').id, params.id, body.amount, body.note) },
+    { method: 'POST', pattern: '/api/teacher/rewards/students/:id/streak-reset', run: async (params) => resetStudentStreak(requireUser(user, 'teacher').id, params.id) },
     { method: 'POST', pattern: '/api/teacher/rewards/streaks/:id/decision', run: async (params) => resolveStreakReview(requireUser(user, 'teacher').id, params.id, body.decision) },
     { method: 'GET', pattern: '/api/student/rewards', run: async () => studentRewards(requireUser(user, 'student').id) },
     { method: 'GET', pattern: '/api/teacher/tasks', run: async () => ({ tasks: await store.listTeacherTasks(requireUser(user, 'teacher').id) }) },
