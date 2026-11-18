@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { useAuth } from './context/AuthContext';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
+import { RewardsPage } from './pages/teacher/RewardsPage';
+import { AchievementsPage } from './pages/student/AchievementsPage';
 import { ClassPage, ClassesPage } from './pages/teacher/ClassesPage';
 import { DashboardPage } from './pages/teacher/DashboardPage';
 import { NotificationsPage, ProgressPage, SettingsPage, StudentProgressPage, TeacherCalendarPage } from './pages/teacher/MorePages';
@@ -40,6 +42,7 @@ export function App() {
         <Route path="/teacher/tasks/:id/edit" element={<TaskEditPage />} />
         <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
         <Route path="/teacher/progress" element={<ProgressPage />} />
+        <Route path="/teacher/rewards" element={<RewardsPage />} />
         <Route path="/teacher/progress/:id" element={<StudentProgressPage />} />
         <Route path="/teacher/notifications" element={<NotificationsPage />} />
         <Route path="/teacher/settings" element={<SettingsPage />} />
@@ -50,6 +53,7 @@ export function App() {
         <Route path="/student/tasks/:id" element={<StudentTaskPage />} />
         <Route path="/student/calendar" element={<StudentCalendarPage />} />
         <Route path="/student/progress" element={<MyProgressPage />} />
+        <Route path="/student/achievements" element={<AchievementsPage />} />
         <Route path="/student/notifications" element={<StudentNotificationsPage />} />
         <Route path="/student/profile" element={<ProfilePage />} />
       </Route>
