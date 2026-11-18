@@ -212,7 +212,7 @@ export function StudentTaskPage() {
       setFiles([]);
       setLink('');
       setComment('');
-      setMessage('Your work has been submitted. It will be marked complete after your teacher approves it.');
+      setMessage('Your work has been submitted. The countdown is paused while your teacher reviews it.');
       setShowCelebration(true);
       playSubmissionCelebration();
       bump();
@@ -239,12 +239,15 @@ export function StudentTaskPage() {
         penalty={task.penalty}
         color={task.color}
         status={task.status}
+        submissionPending={task.submissionPending}
       />
       <section className="rounded-3xl bg-white p-5 shadow-sm">
         <p className="font-bold">Due {formatLongDate(task.deadlineDate)} at {formatTime(task.deadlineTime)}</p>
         <div className="mt-3 rounded-2xl bg-[#FFF3B0] p-3 font-extrabold">Penalty if late: {task.penalty || 'None'}</div>
         {task.instructions ? <p className="mt-3 font-bold">Instructions: {task.instructions}</p> : null}
         <div className="mt-4"><StatusPill status={task.status} /></div>
+        {task.submissionPending ? <p className="mt-3 rounded-xl bg-[#D6E6FF] p-3 font-extrabold text-[#315fc4]">Submitted successfully. The countdown is paused while you wait for your teacher to review.</p> : null}
+        {task.revisionDeadlineAt && !task.submissionPending && !done ? <p className="mt-3 rounded-xl bg-[#FFE0C2] p-3 font-extrabold text-orange-900">Needs revision · New deadline: {formatStamp(task.revisionDeadlineAt)}</p> : null}
         {done && task.completedAt ? (
           <p className="mt-4 font-extrabold text-[#067a4b]" data-testid="completed-stamp">
             Approved by your teacher · {formatStamp(task.completedAt)}
@@ -287,7 +290,7 @@ export function StudentTaskPage() {
           </div>
         ) : <p className="mb-3 text-sm font-semibold text-slate-500">You need to submit a file or a link before this task can be completed.</p>}
 
-        {!done ? (
+        {!done && !task.submissionPending ? (
           <form className="grid gap-3" onSubmit={(event) => void submitWork(event)}>
             <Field label="Upload files or photos (PDF, Word or images — 10 MB total)">
               <input className={controlClass} type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} />
