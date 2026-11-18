@@ -49,6 +49,69 @@ async function request(path: string, init: RequestInit = {}) {
   return data;
 }
 
+const databaseSnapshotPath = '_system/duty.sqlite.gz';
+
+function storageAuthHeaders(key: string, legacy: boolean): Record<string, string> {
+  return {
+    apikey: key,
+    ...(legacy ? { Authorization: `Bearer ${key}` } : {}),
+  };
+}
+
+/** Download the last durable SQLite snapshot before the app opens its local database. */
+export async function downloadDatabaseSnapshot(): Promise<Buffer | null> {
+  const { url, key, legacy } = config();
+  const objectPath = databaseSnapshotPath.split('/').map(encodeURIComponent).join('/');
+  const response = await fetch(`${url}/storage/v1/object/${bucket}/${objectPath}`, {
+    headers: storageAuthHeaders(key, legacy),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    console.error('Database snapshot download failed:', response.status);
+    throw new Error('Could not restore the application database from cloud storage.');
+  }
+  return Buffer.from(await response.arrayBuffer());
+}
+
+/** Save a compressed, consistent SQLite snapshot to private Supabase Storage. */
+export async function uploadDatabaseSnapshot(snapshot: Buffer): Promise<void> {
+  const { url, key, legacy } = config();
+  const objectPath = databaseSnapshotPath.split('/').map(encodeURIComponent).join('/');
+  const response = await fetch(`${url}/storage/v1/object/${bucket}/${objectPath}`, {
+    method: 'POST',
+    headers: {
+      ...storageAuthHeaders(key, legacy),
+      'Content-Type': 'application/gzip',
+      'x-upsert': 'true',
+      'Cache-Control': 'no-store',
+    },
+    body: snapshot,
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    console.error('Database snapshot upload failed:', response.status, detail.slice(0, 500));
+    throw new Error('Could not save the application database to cloud storage.');
+  }
+}
+
+/** One-time import of the existing core tables when no cloud snapshot exists yet. */
+export async function loadLegacyDatabaseRows(): Promise<Record<string, Record<string, unknown>[]>> {
+  const tables = [
+    'users',
+    'classes',
+    'class_members',
+    'tasks',
+    'task_assignments',
+    'task_completions',
+    'notifications',
+  ];
+  const entries = await Promise.all(tables.map(async (table) => {
+    const result = await request(`/rest/v1/${table}?select=*&limit=1000`, { method: 'GET' });
+    return [table, Array.isArray(result) ? result as Record<string, unknown>[] : []] as const;
+  }));
+  return Object.fromEntries(entries);
+}
+
 function safeName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || 'upload';
 }
