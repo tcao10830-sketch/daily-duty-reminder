@@ -80,7 +80,7 @@ export function TasksPage() {
               priority={task.priority}
               penalty={task.penalty}
               color={task.color}
-              footer={task.taskStatus === 'cancelled' ? 'Cancelled' : `${task.completionRate}% · ${task.completedCount}/${task.assignedCount}`}
+              footer={task.taskStatus === 'cancelled' ? 'Cancelled' : `${task.overdueCount > 0 ? '⚠️ Overdue · ' : new Date(task.deadlineAt).getTime() - Date.now() <= 3 * 60 * 60 * 1000 && task.pendingCount > 0 ? '⏰ Due soon · ' : ''}${task.completionRate}% · ${task.completedCount}/${task.assignedCount}`}
             />
           ))}
         </div>
