@@ -68,13 +68,13 @@ export function StatusPill({ status }: { status: CompletionStatus }) {
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-extrabold ${statusClass(status)}`}>{STATUS_LABEL[status]}</span>;
 }
 
-export function Countdown({ deadlineAt, status }: { deadlineAt: string; status: CompletionStatus }) {
+export function Countdown({ deadlineAt, status, paused = false }: { deadlineAt: string; status: CompletionStatus; paused?: boolean }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-  if (status === 'on_time' || status === 'late') return null;
+  if (status === 'on_time' || status === 'late' || paused) return null;
   const diff = new Date(deadlineAt).getTime() - now;
   if (diff <= 0) return <span className="font-extrabold text-[#EF5B68]">Deadline passed</span>;
   const total = Math.floor(diff / 1000);
