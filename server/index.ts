@@ -131,7 +131,9 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       const student = requireUser(user, 'student');
       const assignment = await store.studentTask(student.id, params.id);
       const expiresAt = new Date(new Date(assignment.deadlineAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      return { submission: await cloud.createSubmission(params.id, student.id, body, expiresAt) };
+      const submission = await cloud.createSubmission(params.id, student.id, body, expiresAt);
+      await store.markAssignmentSubmitted(student.id, assignment.assignmentId, submission.created_at || new Date().toISOString());
+      return { submission };
     } },
     { method: 'GET', pattern: '/api/teacher/assignments/:id/submissions', run: async (params) => {
       const teacher = requireUser(user, 'teacher');
@@ -146,7 +148,9 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       if (status !== 'approved' && status !== 'revision_requested') throw new HttpError(400, 'Choose approve or request changes.');
       const review = await cloud.reviewSubmission(params.id, teacher.id, status, String(body.feedback || ''));
       if (status === 'approved') {
-        await store.completeAssignmentAt(assignment.studentId, assignment.assignmentId, new Date().toISOString());
+        await store.completeAssignmentAt(assignment.studentId, assignment.assignmentId, submission.created_at);
+      } else {
+        await store.requestAssignmentRevision(teacher.id, assignment.assignmentId, review.review.created_at || new Date().toISOString());
       }
       return { review };
     } },
