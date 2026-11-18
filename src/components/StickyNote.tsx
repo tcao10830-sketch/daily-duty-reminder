@@ -35,6 +35,7 @@ export function StickyNote({
   penalty,
   color,
   status,
+  submissionPending = false,
   footer,
 }: {
   id: string;
@@ -52,6 +53,7 @@ export function StickyNote({
   penalty: string;
   color: NoteColor;
   status?: CompletionStatus;
+  submissionPending?: boolean;
   footer?: string;
 }) {
   const body = (
@@ -75,7 +77,7 @@ export function StickyNote({
         </div>
         {deadlineAt && status ? (
           <div>
-            <Countdown deadlineAt={deadlineAt} status={status} />
+            <Countdown deadlineAt={deadlineAt} status={status} paused={submissionPending} />
           </div>
         ) : null}
       </dl>
@@ -83,6 +85,7 @@ export function StickyNote({
         <span className="font-extrabold">Penalty: </span>
         {penalty || 'None'}
       </p>
+      {submissionPending ? <p className="mt-2 text-xs font-extrabold text-[#315fc4]">Submitted · waiting for teacher review</p> : null}
       <div className="mt-3 flex items-center justify-between gap-2">
         {status ? <StatusPill status={status} /> : <span />}
         {footer ? <span className="text-xs font-extrabold">{footer}</span> : null}
