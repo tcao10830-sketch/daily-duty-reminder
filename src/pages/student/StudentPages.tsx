@@ -332,19 +332,35 @@ export function StudentNotificationsPage() {
   const { bump } = useAuth();
   if (loading && !data) return <Loading />;
   if (error) return <Banner tone="error">{error}</Banner>;
+  const removeOne = async (id: string) => {
+    if (!window.confirm('Delete this notification?')) return;
+    await api(`/api/notifications/${id}`, { method: 'DELETE' });
+    bump();
+  };
+  const removeAll = async () => {
+    if (!window.confirm('Delete all notifications? This cannot be undone.')) return;
+    await api('/api/notifications', { method: 'DELETE' });
+    bump();
+  };
   return (
     <div className="grid gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-extrabold">Notifications</h1>
-        <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Mark all read</Button>
+        <div className="flex gap-2">
+          <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Mark all read</Button>
+          <Button tone="danger" onClick={() => void removeAll()}>Delete all</Button>
+        </div>
       </div>
       {data?.notifications.length === 0 ? <Empty>No notifications yet.</Empty> : null}
       {data?.notifications.map((item) => (
-        <button key={item.id} type="button" onClick={() => void api(`/api/notifications/${item.id}/read`, { method: 'POST' }).then(() => bump())} className={`rounded-3xl p-4 text-left shadow-sm ${item.read ? 'bg-white' : 'bg-[#D6E6FF]'}`}>
-          <p className="font-extrabold">{item.title}</p>
-          <p className="font-semibold">{item.body}</p>
-          <p className="text-xs font-bold text-slate-500">{formatStamp(item.createdAt)}</p>
-        </button>
+        <div key={item.id} className={`flex items-start gap-3 rounded-3xl p-4 shadow-sm ${item.read ? 'bg-white' : 'bg-[#D6E6FF]'}`}>
+          <button type="button" onClick={() => void api(`/api/notifications/${item.id}/read`, { method: 'POST' }).then(() => bump())} className="min-w-0 flex-1 text-left">
+            <p className="font-extrabold">{item.title}</p>
+            <p className="font-semibold">{item.body}</p>
+            <p className="text-xs font-bold text-slate-500">{formatStamp(item.createdAt)}</p>
+          </button>
+          <button type="button" aria-label="Delete notification" onClick={() => void removeOne(item.id)} className="rounded-xl bg-white/80 px-3 py-2 text-sm font-extrabold text-red-600 shadow-sm">Delete</button>
+        </div>
       ))}
     </div>
   );
