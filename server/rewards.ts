@@ -58,6 +58,7 @@ export function recordSubmissionRewardsLocked(studentId: string, assignmentId: s
   let current = state.current_streak;
   if (state.status === 'broken' || (state.grace_deadline_at && submittedMs > new Date(state.grace_deadline_at).getTime())) current = 0;
   if (submittedMs > dueMs + 24 * 60 * 60 * 1000) current = 0;
+  const resolvesThreat = state.status !== 'threatened' || state.threatened_assignment_id === assignmentId;
   const next = current + 1;
   const bonus = streakBonus(next);
   db.prepare(`
@@ -65,9 +66,15 @@ export function recordSubmissionRewardsLocked(studentId: string, assignmentId: s
     VALUES (?, ?, ?, ?, ?, 1)
   `).run(assignmentId, studentId, next, submittedAt, bonus);
   db.prepare(`
-    UPDATE student_streaks SET current_streak = ?, status = 'active', grace_deadline_at = NULL,
-      threatened_assignment_id = NULL, last_submitted_at = ?, updated_at = ? WHERE student_id = ?
-  `).run(next, submittedAt, nowIso(), studentId);
+    UPDATE student_streaks SET current_streak = ?, status = ?, grace_deadline_at = ?, threatened_assignment_id = ?,
+      last_submitted_at = ?, updated_at = ? WHERE student_id = ?
+  `).run(
+    next,
+    resolvesThreat ? 'active' : 'threatened',
+    resolvesThreat ? null : state.grace_deadline_at,
+    resolvesThreat ? null : state.threatened_assignment_id,
+    submittedAt, nowIso(), studentId,
+  );
   if (bonus) addLedger(studentId, assignment.teacher_id, assignmentId, 'streak', bonus, `Streak task #${next}`);
 
   const hoursEarly = (dueMs - submittedMs) / (60 * 60 * 1000);
@@ -233,6 +240,17 @@ export function adjustStudentPencils(teacherId: string, studentId: string, rawAm
     const owned = db.prepare('SELECT u.id FROM users u JOIN class_members m ON m.student_id = u.id JOIN classes c ON c.id = m.class_id WHERE u.id = ? AND c.teacher_id = ?').get(studentId, teacherId);
     if (!owned) throw new HttpError(404, 'Student not found.');
     addLedger(studentId, teacherId, null, 'adjustment', amount, note);
+    return { ok: true };
+  });
+}
+
+export function resetStudentStreak(teacherId: string, studentId: string) {
+  return withDb(() => {
+    const owned = db.prepare('SELECT u.id FROM users u JOIN class_members m ON m.student_id = u.id JOIN classes c ON c.id = m.class_id WHERE u.id = ? AND c.teacher_id = ?').get(studentId, teacherId);
+    if (!owned) throw new HttpError(404, 'Student not found.');
+    ensureStreak(studentId);
+    db.prepare("UPDATE student_streaks SET current_streak = 0, status = 'broken', grace_deadline_at = NULL, threatened_assignment_id = NULL, updated_at = ? WHERE student_id = ?").run(nowIso(), studentId);
+    notify(studentId, 'streak_teacher_reset', 'Your streak was reset', 'Your teacher reset your current task streak.', `teacher-reset:${nowIso()}`);
     return { ok: true };
   });
 }
