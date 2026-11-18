@@ -181,7 +181,7 @@ if (ledgerForeignKeys.some((key) => key.table === 'task_assignments' && key.on_d
     'CREATE UNIQUE INDEX idx_pencil_ledger_once ON pencil_ledger(student_id, assignment_id, source) WHERE assignment_id IS NOT NULL;',
     'CREATE INDEX idx_pencil_ledger_student ON pencil_ledger(student_id, created_at);',
     'COMMIT;',
-  ].join('\\n'));
+  ].join(' '));
   db.exec('PRAGMA foreign_keys = ON');
 }
 
