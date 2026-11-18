@@ -26,6 +26,7 @@ type Overview = {
 export function StudentHomePage() {
   const { user } = useAuth();
   const { data, error, loading } = useQuery<Overview>('/api/student/overview');
+  const rewards = useQuery<{ totalPencils: number; currentStreak: number; streakStatus: string; graceDeadlineAt: string | null; threatenedTaskTitle: string | null }>('/api/student/rewards');
   if (loading && !data) return <Loading />;
   if (!data) return <Banner tone="error">{error}</Banner>;
   return (
@@ -43,6 +44,17 @@ export function StudentHomePage() {
           <Mascot size={132} />
         </div>
       </section>
+      {rewards.data?.streakStatus === 'threatened' ? (
+        <section className="rounded-3xl border-2 border-red-300 bg-red-50 p-4 text-red-800 shadow-sm">
+          <p className="font-extrabold">⚠ Your streak is at risk!</p>
+          <p className="mt-1 text-sm font-bold">Complete “{rewards.data.threatenedTaskTitle || 'your overdue task'}” within 24 hours to keep your streak.</p>
+          {rewards.data.graceDeadlineAt ? <p className="mt-1 text-xs font-extrabold">Recovery deadline: {formatStamp(rewards.data.graceDeadlineAt)}</p> : null}
+        </section>
+      ) : null}
+      <Link to="/student/achievements" className="flex flex-wrap items-center justify-between gap-2 rounded-3xl bg-[#FFF3B0] p-4 shadow-sm">
+        <div><p className="font-extrabold text-[#805b19]">Your achievements</p><p className="text-sm font-bold text-[#805b19]">{rewards.data?.currentStreak ?? 0} task streak</p></div>
+        <strong className="text-2xl text-[#34445e]">{rewards.data?.totalPencils ?? 0} ✏️</strong>
+      </Link>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Assigned" value={data.stats.assigned} tint="#FFF3B0" />
         <StatCard label="Completed" value={data.stats.completed} tint="#D8F6E4" />
