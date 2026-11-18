@@ -150,6 +150,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_pencil_ledger_once
   ON pencil_ledger(student_id, assignment_id, source) WHERE assignment_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_pencil_ledger_student ON pencil_ledger(student_id, created_at);
 
+CREATE TABLE IF NOT EXISTS streak_events (
+  assignment_id TEXT PRIMARY KEY REFERENCES task_assignments(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  streak_number INTEGER NOT NULL,
+  submitted_at TEXT NOT NULL,
+  streak_bonus INTEGER NOT NULL DEFAULT 0,
+  review_required INTEGER NOT NULL DEFAULT 0,
+  decision TEXT CHECK (decision IN ('keep', 'break')),
+  counted INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_teacher ON tasks(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_class ON tasks(class_id);
+CREATE INDEX IF NOT EXISTS idx_assign_student ON task_assignments(student_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at);
+
+);
+
 // Keep earned pencil history even if a teacher later deletes its original task.
 const ledgerForeignKeys = db.prepare('PRAGMA foreign_key_list(pencil_ledger)').all() as { table: string; on_delete: string }[];
 if (ledgerForeignKeys.some((key) => key.table === 'task_assignments' && key.on_delete.toUpperCase() === 'CASCADE')) {
@@ -177,22 +195,6 @@ if (ledgerForeignKeys.some((key) => key.table === 'task_assignments' && key.on_d
   `);
   db.exec('PRAGMA foreign_keys = ON');
 }
-CREATE TABLE IF NOT EXISTS streak_events (
-  assignment_id TEXT PRIMARY KEY REFERENCES task_assignments(id) ON DELETE CASCADE,
-  student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  streak_number INTEGER NOT NULL,
-  submitted_at TEXT NOT NULL,
-  streak_bonus INTEGER NOT NULL DEFAULT 0,
-  review_required INTEGER NOT NULL DEFAULT 0,
-  decision TEXT CHECK (decision IN ('keep', 'break')),
-  counted INTEGER NOT NULL DEFAULT 1
-);
-
-CREATE INDEX IF NOT EXISTS idx_tasks_teacher ON tasks(teacher_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_class ON tasks(class_id);
-CREATE INDEX IF NOT EXISTS idx_assign_student ON task_assignments(student_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at);
-`);
 
 // Persist submission and revision timing with each assignment.
 const assignmentColumns = db.prepare('PRAGMA table_info(task_assignments)').all() as { name: string }[];
