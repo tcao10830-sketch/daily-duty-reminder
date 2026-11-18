@@ -13,8 +13,25 @@ import type { AssignmentCard, ClassSummary, CompletionStatus, TaskSummary } from
 
 export function TasksPage() {
   const { data, error, loading } = useQuery<{ tasks: TaskSummary[] }>('/api/teacher/tasks');
+  const classes = useQuery<{ classes: ClassSummary[] }>('/api/teacher/classes');
   const [showCancelled, setShowCancelled] = useState(false);
-  const tasks = (data?.tasks ?? []).filter((task) => showCancelled || task.taskStatus === 'active');
+  const [classFilter, setClassFilter] = useState('all');
+  const [studentFilter, setStudentFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const tasks = (data?.tasks ?? [])
+    .filter((task) => showCancelled || task.taskStatus === 'active')
+    .filter((task) => classFilter === 'all' || task.classId === classFilter)
+    .filter((task) => studentFilter === 'all' || (task.studentNames ?? []).includes(studentFilter))
+    .filter((task) => {
+      if (statusFilter === 'overdue') return task.overdueCount > 0;
+      if (statusFilter === 'completed') return task.assignedCount > 0 && task.completedCount === task.assignedCount;
+      if (statusFilter === 'pending') return task.pendingCount > 0 && task.overdueCount === 0;
+      return true;
+    })
+    .sort((a, b) => new Date(a.deadlineAt).getTime() - new Date(b.deadlineAt).getTime());
+  const students = (classes.data?.classes ?? [])
+    .filter((item) => classFilter === 'all' || item.id === classFilter)
+    .flatMap((item) => item.students);
   if (loading && !data) return <Loading />;
   return (
     <div className="grid gap-4">
@@ -25,8 +42,27 @@ export function TasksPage() {
           <Link to="/teacher/tasks/new" className="rounded-2xl bg-[#FF914D] px-4 py-2.5 font-extrabold text-white">New task</Link>
         </div>
       </div>
+      <section className="grid gap-2 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-3">
+        <label className="grid gap-1 text-sm font-extrabold">Class
+          <select className="rounded-xl border border-slate-200 bg-white px-3 py-2" value={classFilter} onChange={(event) => { setClassFilter(event.target.value); setStudentFilter('all'); }}>
+            <option value="all">All classes</option>
+            {(classes.data?.classes ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-extrabold">Student
+          <select className="rounded-xl border border-slate-200 bg-white px-3 py-2" value={studentFilter} onChange={(event) => setStudentFilter(event.target.value)}>
+            <option value="all">All students</option>
+            {students.map((student) => <option key={student.id} value={student.name}>{student.name}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-extrabold">Task status
+          <select className="rounded-xl border border-slate-200 bg-white px-3 py-2" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="all">All tasks</option><option value="pending">Upcoming / pending</option><option value="overdue">Overdue</option><option value="completed">Completed</option>
+          </select>
+        </label>
+      </section>
       {error ? <Banner tone="error">{error}</Banner> : null}
-      {tasks.length === 0 ? <Empty>No tasks on the board.</Empty> : (
+      {tasks.length === 0 ? <Empty>No tasks match these filters.</Empty> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tasks.map((task) => (
             <StickyNote
