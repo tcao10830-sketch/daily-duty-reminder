@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import { DatabaseSync } from 'node:sqlite';
+import { hashPassword } from './auth.ts';
 import { downloadDatabaseSnapshot, uploadDatabaseSnapshot, loadLegacyDatabaseRows } from './supabase.ts';
 
 const dataDir = join(process.cwd(), 'data');
@@ -44,6 +45,11 @@ db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA busy_timeout = 3000');
 
 db.exec(`
+CREATE TABLE IF NOT EXISTS app_migrations (
+  key TEXT PRIMARY KEY,
+  applied_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -163,6 +169,27 @@ if (!cloudSnapshot && cloudPersistenceEnabled) {
     }
   }
   await persistSnapshot();
+}
+
+// One-time recovery for the existing teacher account. Set this only on Preview,
+// then remove the environment variable after the successful deployment.
+const recoveryPassword = process.env.PREVIEW_TEACHER_RECOVERY_PASSWORD;
+if (recoveryPassword) {
+  if (recoveryPassword.length < 10) {
+    throw new Error('PREVIEW_TEACHER_RECOVERY_PASSWORD must be at least 10 characters.');
+  }
+  const migrationKey = 'preview_teacher_password_recovery_v1';
+  const alreadyApplied = db.prepare('SELECT key FROM app_migrations WHERE key = ?').get(migrationKey);
+  if (!alreadyApplied) {
+    const account = db.prepare(
+      "SELECT id FROM users WHERE lower(email) = lower(?) AND role = 'teacher'",
+    ).get('tcao10830@gmail.com') as { id: string } | undefined;
+    if (!account) throw new Error('Teacher account for the one-time Preview recovery was not found.');
+    const passwordHash = await hashPassword(recoveryPassword);
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, account.id);
+    db.prepare('INSERT INTO app_migrations (key, applied_at) VALUES (?, ?)').run(migrationKey, new Date().toISOString());
+    await persistSnapshot();
+  }
 }
 
 let queue: Promise<unknown> = Promise.resolve();
