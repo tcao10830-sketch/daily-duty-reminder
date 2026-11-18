@@ -14,6 +14,7 @@ import {
   type Recurrence,
 } from './time.ts';
 import { emitMany } from './events.ts';
+import { flagStreakRevisionLocked, recordSubmissionRewardsLocked, sweepStreaksLocked } from './rewards.ts';
 
 export type Role = 'teacher' | 'student';
 export type Priority = 'low' | 'medium' | 'high';
@@ -818,6 +819,7 @@ export function markAssignmentSubmitted(studentId: string, assignmentId: string,
     if (!row) throw new HttpError(404, 'Task not found.');
     if (row.completed_at) throw new HttpError(409, 'This task is already complete.');
     db.prepare('UPDATE task_assignments SET submitted_at = ?, in_progress = 0 WHERE id = ?').run(submittedAt, assignmentId);
+    recordSubmissionRewardsLocked(studentId, assignmentId, submittedAt);
     return mapAssignment(db.prepare(`${assignmentSelect} WHERE a.id = ?`).get(assignmentId) as AssignmentRow);
   });
 }
@@ -828,6 +830,7 @@ export function requestAssignmentRevision(teacherId: string, assignmentId: strin
     if (!row) throw new HttpError(404, 'Assignment not found.');
     const revisionDeadline = new Date(new Date(reviewedAt).getTime() + 48 * 60 * 60 * 1000).toISOString();
     db.prepare('UPDATE task_assignments SET submitted_at = NULL, revision_deadline_at = ?, in_progress = 0 WHERE id = ?').run(revisionDeadline, assignmentId);
+    flagStreakRevisionLocked(teacherId, assignmentId);
     const events: LiveEvent[] = [];
     insertNotification(row.student_id, 'task_revision_requested', 'Revision requested', `Your teacher asked you to revise “${row.title}”.`, `${assignmentId}:revision:${reviewedAt}`, events);
     publish(events);
@@ -1027,5 +1030,6 @@ function sweepLocked(): void {
 export function sweepDeadlines() {
   return withDb(() => {
     sweepLocked();
+    sweepStreaksLocked();
   });
 }
