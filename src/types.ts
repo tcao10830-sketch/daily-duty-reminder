@@ -53,6 +53,7 @@ export type TaskSummary = {
   pendingCount: number;
   overdueCount: number;
   completionRate: number;
+  studentNames?: string[];
 };
 
 export type ClassSummary = {
