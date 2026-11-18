@@ -154,6 +154,8 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'GET', pattern: '/api/notifications', run: async () => store.listNotifications(requireUser(user).id) },
     { method: 'POST', pattern: '/api/notifications/:id/read', run: async (params) => store.markRead(requireUser(user).id, params.id) },
     { method: 'POST', pattern: '/api/notifications/read-all', run: async () => store.markAllRead(requireUser(user).id) },
+    { method: 'DELETE', pattern: '/api/notifications/:id', run: async (params) => store.deleteNotification(requireUser(user).id, params.id) },
+    { method: 'DELETE', pattern: '/api/notifications', run: async () => store.deleteAllNotifications(requireUser(user).id) },
     { method: 'GET', pattern: '/api/health', run: async () => ({ ok: true }) },
   ];
 
