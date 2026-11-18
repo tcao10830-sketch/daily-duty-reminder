@@ -1,10 +1,32 @@
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { DatabaseSync } from 'node:sqlite';
+import { downloadDatabaseSnapshot, uploadDatabaseSnapshot, loadLegacyDatabaseRows } from './supabase.ts';
 
 const dataDir = join(process.cwd(), 'data');
 mkdirSync(dataDir, { recursive: true });
+
+const databasePath = join(dataDir, 'duty.sqlite');
+const cloudPersistenceEnabled = Boolean(
+  process.env.SUPABASE_URL &&
+  (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY),
+);
+if (process.env.NODE_ENV === 'production' && !cloudPersistenceEnabled) {
+  throw new Error('SUPABASE_URL and a server-side Supabase key are required for persistent production storage.');
+}
+
+// Restore the last cloud snapshot before opening SQLite. The local file is only a working copy.
+const hadLocalDatabase = existsSync(databasePath);
+const cloudSnapshot = cloudPersistenceEnabled ? await downloadDatabaseSnapshot() : null;
+if (cloudSnapshot) {
+  for (const suffix of ['', '-wal', '-shm']) {
+    const oldPath = databasePath + suffix;
+    if (existsSync(oldPath)) unlinkSync(oldPath);
+  }
+  writeFileSync(databasePath, gunzipSync(cloudSnapshot));
+}
 
 const configuredSecret = process.env.JWT_SECRET?.trim();
 if (process.env.NODE_ENV === 'production' && !configuredSecret) {
@@ -17,7 +39,7 @@ const secretPath = join(dataDir, 'jwt.secret');
 if (!configuredSecret && !existsSync(secretPath)) writeFileSync(secretPath, randomBytes(32).toString('hex'));
 export const jwtSecret = configuredSecret || readFileSync(secretPath, 'utf8');
 
-export const db = new DatabaseSync(join(dataDir, 'duty.sqlite'));
+export const db = new DatabaseSync(databasePath);
 db.exec('PRAGMA foreign_keys = ON');
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA busy_timeout = 3000');
@@ -101,11 +123,60 @@ CREATE INDEX IF NOT EXISTS idx_assign_student ON task_assignments(student_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at);
 `);
 
+async function persistSnapshot(): Promise<void> {
+  if (!cloudPersistenceEnabled) return;
+  const snapshotPath = join(dataDir, `snapshot-${randomUUID()}.sqlite`);
+  try {
+    db.exec('PRAGMA wal_checkpoint(FULL)');
+    db.exec(`VACUUM INTO '${snapshotPath.replace(/'/g, "''")}'`);
+    await uploadDatabaseSnapshot(gzipSync(readFileSync(snapshotPath)));
+  } finally {
+    if (existsSync(snapshotPath)) unlinkSync(snapshotPath);
+  }
+}
+
+// If this is the first boot without a snapshot, preserve any rows already in Supabase.
+if (!cloudSnapshot && cloudPersistenceEnabled) {
+  const existing = db.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number };
+  if (existing.n === 0) {
+    const legacy = await loadLegacyDatabaseRows();
+    const importOrder = [
+      'users',
+      'classes',
+      'class_members',
+      'tasks',
+      'task_assignments',
+      'task_completions',
+      'notifications',
+    ];
+    for (const table of importOrder) {
+      for (const row of legacy[table] || []) {
+        const columns = Object.keys(row).filter((column) => /^[a-z_][a-z0-9_]*$/i.test(column));
+        if (!columns.length) continue;
+        const values = columns.map((column) => {
+          const value = row[column];
+          if (table === 'task_assignments' && column === 'in_progress') return value ? 1 : 0;
+          return value ?? null;
+        });
+        const sql = `INSERT OR IGNORE INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(() => '?').join(', ')})`;
+        db.prepare(sql).run(...values as any[]);
+      }
+    }
+  }
+  await persistSnapshot();
+}
+
 let queue: Promise<unknown> = Promise.resolve();
 
 /** Run database work one at a time. Do not call withDb inside another withDb. */
 export function withDb<T>(fn: () => T): Promise<T> {
-  const run = queue.then(() => fn());
+  const run = queue.then(async () => {
+    const before = (db.prepare('SELECT total_changes() AS n').get() as { n: number }).n;
+    const result = fn();
+    const after = (db.prepare('SELECT total_changes() AS n').get() as { n: number }).n;
+    if (after > before) await persistSnapshot();
+    return result;
+  });
   queue = run.then(
     () => undefined,
     () => undefined,
