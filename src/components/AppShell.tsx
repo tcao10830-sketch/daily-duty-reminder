@@ -13,6 +13,7 @@ const teacherLinks = [
   ['/teacher/tasks', 'Tasks', '✓'],
   ['/teacher/calendar', 'Calendar', '▣'],
   ['/teacher/progress', 'Student Progress', '↗'],
+  ['/teacher/rewards', 'Rewards', '✏️'],
   ['/teacher/notifications', 'Notifications', '♧'],
   ['/teacher/settings', 'Settings', '⚙'],
 ];
@@ -22,6 +23,7 @@ const studentLinks = [
   ['/student/tasks', 'My Tasks', '✓'],
   ['/student/calendar', 'Calendar', '▣'],
   ['/student/progress', 'My Progress', '↗'],
+  ['/student/achievements', 'Achievements', '✏️'],
   ['/student/notifications', 'Notifications', '♧'],
   ['/student/profile', 'Profile', '☺'],
 ];
