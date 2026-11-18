@@ -46,6 +46,8 @@ type AssignmentRow = {
   recurrence: Recurrence;
   task_status: 'active' | 'cancelled';
   in_progress: number;
+  submitted_at: string | null;
+  revision_deadline_at: string | null;
   completed_at: string | null;
   teacher_id: string;
 };
@@ -71,6 +73,9 @@ export type AssignmentCard = {
   recurrence: Recurrence;
   taskStatus: 'active' | 'cancelled';
   inProgress: boolean;
+  submittedAt: string | null;
+  submissionPending: boolean;
+  revisionDeadlineAt: string | null;
   completedAt: string | null;
   status: CompletionStatus;
 };
@@ -96,7 +101,10 @@ function requireText(value: unknown, label: string, max: number): string {
 }
 
 function mapAssignment(row: AssignmentRow): AssignmentCard {
-  const status = completionStatus(row.completed_at, row.deadline_date, row.deadline_time);
+  const effectiveDeadline = row.revision_deadline_at ? new Date(row.revision_deadline_at) : null;
+  const effectiveDate = effectiveDeadline ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(effectiveDeadline) : row.deadline_date;
+  const effectiveTime = effectiveDeadline ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(effectiveDeadline) : row.deadline_time;
+  const status = row.submitted_at && !row.completed_at ? 'pending' : completionStatus(row.completed_at, effectiveDate, effectiveTime);
   return {
     assignmentId: row.assignment_id,
     taskId: row.task_id,
@@ -109,15 +117,18 @@ function mapAssignment(row: AssignmentRow): AssignmentCard {
     studentId: row.student_id,
     studentName: row.student_name,
     assignmentDate: row.assignment_date,
-    deadlineDate: row.deadline_date,
-    deadlineTime: row.deadline_time,
-    deadlineAt: new Date(deadlineMs(row.deadline_date, row.deadline_time)).toISOString(),
+    deadlineDate: effectiveDate,
+    deadlineTime: effectiveTime,
+    deadlineAt: effectiveDeadline ? effectiveDeadline.toISOString() : new Date(deadlineMs(row.deadline_date, row.deadline_time)).toISOString(),
     priority: row.priority,
     penalty: row.penalty,
     color: row.color,
     recurrence: row.recurrence,
     taskStatus: row.task_status,
     inProgress: row.in_progress === 1 && !row.completed_at && status === 'pending',
+    submittedAt: row.submitted_at,
+    submissionPending: Boolean(row.submitted_at && !row.completed_at),
+    revisionDeadlineAt: row.revision_deadline_at,
     completedAt: row.completed_at,
     status,
   };
@@ -127,6 +138,8 @@ const assignmentSelect = `
   SELECT
     a.id AS assignment_id,
     a.in_progress,
+    a.submitted_at,
+    a.revision_deadline_at,
     u.name AS student_name,
     u.id AS student_id,
     t.id AS task_id,
@@ -743,7 +756,7 @@ function recordCompletion(studentId: string, assignmentId: string, completedAt: 
       throw new HttpError(409, 'This task is already marked complete.');
     }
     db.prepare('INSERT INTO task_completions (id, assignment_id, completed_at) VALUES (?, ?, ?)').run(id(), assignmentId, completedAt);
-    db.prepare('UPDATE task_assignments SET in_progress = 0 WHERE id = ?').run(assignmentId);
+    db.prepare('UPDATE task_assignments SET in_progress = 0, submitted_at = NULL WHERE id = ?').run(assignmentId);
     db.exec('COMMIT');
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -788,7 +801,7 @@ export function reopenAssignment(teacherId: string, assignmentId: string) {
     const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND t.teacher_id = ?`).get(assignmentId, teacherId) as unknown as AssignmentRow | undefined;
     if (!row) throw new HttpError(404, 'Assignment not found.');
     db.prepare('DELETE FROM task_completions WHERE assignment_id = ?').run(assignmentId);
-    db.prepare('UPDATE task_assignments SET in_progress = 0 WHERE id = ?').run(assignmentId);
+    db.prepare('UPDATE task_assignments SET in_progress = 0, submitted_at = NULL, revision_deadline_at = NULL WHERE id = ?').run(assignmentId);
     const events: LiveEvent[] = [];
     insertNotification(row.student_id, 'task_updated', 'Task reopened', `${row.title} was reopened by your teacher.`, `${assignmentId}:reopened:${nowIso()}`, events);
     const fresh = db.prepare(`${assignmentSelect} WHERE a.id = ?`).get(assignmentId) as unknown as AssignmentRow;
@@ -796,6 +809,29 @@ export function reopenAssignment(teacherId: string, assignmentId: string) {
   }).then((result) => {
     publish(result.events);
     return result.card;
+  });
+}
+
+export function markAssignmentSubmitted(studentId: string, assignmentId: string, submittedAt: string) {
+  return withDb(() => {
+    const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND a.student_id = ? AND t.status = 'active'`).get(assignmentId, studentId) as AssignmentRow | undefined;
+    if (!row) throw new HttpError(404, 'Task not found.');
+    if (row.completed_at) throw new HttpError(409, 'This task is already complete.');
+    db.prepare('UPDATE task_assignments SET submitted_at = ?, in_progress = 0 WHERE id = ?').run(submittedAt, assignmentId);
+    return mapAssignment(db.prepare(`${assignmentSelect} WHERE a.id = ?`).get(assignmentId) as AssignmentRow);
+  });
+}
+
+export function requestAssignmentRevision(teacherId: string, assignmentId: string, reviewedAt: string) {
+  return withDb(() => {
+    const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND t.teacher_id = ?`).get(assignmentId, teacherId) as AssignmentRow | undefined;
+    if (!row) throw new HttpError(404, 'Assignment not found.');
+    const revisionDeadline = new Date(new Date(reviewedAt).getTime() + 48 * 60 * 60 * 1000).toISOString();
+    db.prepare('UPDATE task_assignments SET submitted_at = NULL, revision_deadline_at = ?, in_progress = 0 WHERE id = ?').run(revisionDeadline, assignmentId);
+    const events: LiveEvent[] = [];
+    insertNotification(row.student_id, 'task_revision_requested', 'Revision requested', `Your teacher asked you to revise “${row.title}”.`, `${assignmentId}:revision:${reviewedAt}`, events);
+    publish(events);
+    return { revisionDeadlineAt: revisionDeadline };
   });
 }
 
@@ -971,13 +1007,13 @@ export function deleteAllNotifications(userId: string) {
 function sweepLocked(): void {
   const rows = db
     .prepare(
-      `${assignmentSelect} WHERE t.status = 'active' AND k.completed_at IS NULL`,
+      `${assignmentSelect} WHERE t.status = 'active' AND k.completed_at IS NULL AND a.submitted_at IS NULL`,
     )
     .all() as unknown as AssignmentRow[];
   const events: LiveEvent[] = [];
   const now = Date.now();
   for (const row of rows) {
-    const deadline = deadlineMs(row.deadline_date, row.deadline_time);
+    const deadline = row.revision_deadline_at ? new Date(row.revision_deadline_at).getTime() : deadlineMs(row.deadline_date, row.deadline_time);
     if (now > deadline) {
       insertNotification(row.student_id, 'task_overdue', 'Task overdue', `${row.title} is past the deadline. Penalty: ${row.penalty || 'None'}.`, row.assignment_id, events);
       insertNotification(row.teacher_id, 'student_overdue', 'Task became overdue', `${row.student_name} has not completed “${row.title}”.`, row.assignment_id, events);
