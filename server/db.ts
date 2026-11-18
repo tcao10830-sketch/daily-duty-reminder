@@ -166,7 +166,7 @@ CREATE INDEX IF NOT EXISTS idx_tasks_class ON tasks(class_id);
 CREATE INDEX IF NOT EXISTS idx_assign_student ON task_assignments(student_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at);
 
-);
+`);
 
 // Keep earned pencil history even if a teacher later deletes its original task.
 const ledgerForeignKeys = db.prepare('PRAGMA foreign_key_list(pencil_ledger)').all() as { table: string; on_delete: string }[];
