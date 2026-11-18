@@ -108,8 +108,21 @@ export async function loadLegacyDatabaseRows(): Promise<Record<string, Record<st
     'notifications',
   ];
   const entries = await Promise.all(tables.map(async (table) => {
-    const result = await request(`/rest/v1/${table}?select=*&limit=1000`, { method: 'GET' });
-    return [table, Array.isArray(result) ? result as Record<string, unknown>[] : []] as const;
+    const rows: Record<string, unknown>[] = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const result = await request(`/rest/v1/${table}?select=*`, {
+        method: 'GET',
+        headers: {
+          'Range-Unit': 'items',
+          Range: `${offset}-${offset + pageSize - 1}`,
+        },
+      });
+      const page = Array.isArray(result) ? result as Record<string, unknown>[] : [];
+      rows.push(...page);
+      if (page.length < pageSize) break;
+    }
+    return [table, rows] as const;
   }));
   return Object.fromEntries(entries);
 }
