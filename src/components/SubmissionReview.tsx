@@ -19,6 +19,7 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
   const { data, error, loading } = useQuery<{ submissions: Submission[] }>(`/api/teacher/assignments/${assignmentId}/submissions`);
   const { bump } = useAuth();
   const [feedback, setFeedback] = useState('');
+  const [qualityPencils, setQualityPencils] = useState('0');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   if (loading && !data) return <Loading />;
@@ -31,9 +32,10 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
     try {
       await api(`/api/teacher/submissions/${submissionId}/review`, {
         method: 'POST',
-        body: JSON.stringify({ status, feedback }),
+        body: JSON.stringify({ status, feedback, qualityPencils: status === 'approved' ? Number(qualityPencils) : 0 }),
       });
       setFeedback('');
+      setQualityPencils('0');
       setMessage(status === 'approved' ? 'Submission approved.' : 'Revision requested.');
       bump();
     } catch (err) {
@@ -63,6 +65,9 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
           ) : (
             <div className="mt-2 space-y-2">
               <textarea className="w-full rounded-lg border p-2 text-xs" rows={2} placeholder="Feedback (optional)" value={feedback} onChange={(event) => setFeedback(event.target.value)} />
+              <label className="grid gap-1 text-xs font-extrabold text-slate-600">Quality reward (pencils, optional)
+                <input className="w-24 rounded-lg border p-2" type="number" min="0" max="100" value={qualityPencils} onChange={(event) => setQualityPencils(event.target.value)} />
+              </label>
               <div className="flex flex-wrap gap-1">
                 <Button tone="green" disabled={busy} onClick={() => void review(item.id, 'approved')}>Approve</Button>
                 <Button tone="orange" disabled={busy} onClick={() => void review(item.id, 'revision_requested')}>Request revision</Button>
