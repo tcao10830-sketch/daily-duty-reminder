@@ -469,6 +469,7 @@ function summarizeTask(taskId: string) {
       pendingCount: pending,
       overdueCount: overdue,
       completionRate: cards.length === 0 ? 0 : Math.round((completed / cards.length) * 100),
+      studentNames: cards.map((card) => card.studentName),
     },
     assignments: cards,
   };
@@ -607,7 +608,7 @@ export function createTask(teacherId: string, input: TaskInput) {
 
 export function listTeacherTasks(teacherId: string) {
   return withDb(() => {
-    const ids = db.prepare('SELECT id FROM tasks WHERE teacher_id = ? ORDER BY assignment_date, deadline_time, title').all(teacherId) as {
+    const ids = db.prepare('SELECT id FROM tasks WHERE teacher_id = ? ORDER BY deadline_date, deadline_time, title').all(teacherId) as {
       id: string;
     }[];
     return ids.map((row) => summarizeTask(row.id).task);
@@ -949,6 +950,20 @@ export function markRead(userId: string, notificationId: string) {
 export function markAllRead(userId: string) {
   return withDb(() => {
     db.prepare(`UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL`).run(nowIso(), userId);
+    return { ok: true };
+  });
+}
+
+export function deleteNotification(userId: string, notificationId: string) {
+  return withDb(() => {
+    db.prepare('DELETE FROM notifications WHERE id = ? AND user_id = ?').run(notificationId, userId);
+    return { ok: true };
+  });
+}
+
+export function deleteAllNotifications(userId: string) {
+  return withDb(() => {
+    db.prepare('DELETE FROM notifications WHERE user_id = ?').run(userId);
     return { ok: true };
   });
 }
