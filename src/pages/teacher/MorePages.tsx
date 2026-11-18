@@ -120,7 +120,7 @@ export function NotificationsPage() {
         <h1 className="text-2xl font-extrabold">Notifications</h1>
         <div className="flex gap-2">
           <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Mark all read</Button>
-          <Button tone="danger" onClick={() => void removeAll()}>Delete all</Button>
+          <Button tone="red" onClick={() => void removeAll()}>Delete all</Button>
         </div>
       </div>
       {data?.notifications.length === 0 ? <Empty>No notifications yet. They appear when tasks are assigned, updated, completed, or become overdue.</Empty> : null}
