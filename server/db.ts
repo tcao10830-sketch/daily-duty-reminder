@@ -6,9 +6,16 @@ import { DatabaseSync } from 'node:sqlite';
 const dataDir = join(process.cwd(), 'data');
 mkdirSync(dataDir, { recursive: true });
 
+const configuredSecret = process.env.JWT_SECRET?.trim();
+if (process.env.NODE_ENV === 'production' && !configuredSecret) {
+  throw new Error('JWT_SECRET must be configured in the production environment.');
+}
+
+// Production tokens must use a stable environment secret, never an ephemeral disk file.
+// Keep the local file fallback for development only.
 const secretPath = join(dataDir, 'jwt.secret');
-if (!existsSync(secretPath)) writeFileSync(secretPath, randomBytes(32).toString('hex'));
-export const jwtSecret = readFileSync(secretPath, 'utf8');
+if (!configuredSecret && !existsSync(secretPath)) writeFileSync(secretPath, randomBytes(32).toString('hex'));
+export const jwtSecret = configuredSecret || readFileSync(secretPath, 'utf8');
 
 export const db = new DatabaseSync(join(dataDir, 'duty.sqlite'));
 db.exec('PRAGMA foreign_keys = ON');
