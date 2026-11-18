@@ -122,6 +122,44 @@ CREATE TABLE IF NOT EXISTS notifications (
   UNIQUE (user_id, type, entity_id)
 );
 
+CREATE TABLE IF NOT EXISTS reward_settings (
+  teacher_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  early_rules_json TEXT NOT NULL DEFAULT '[]',
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS student_streaks (
+  student_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  current_streak INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'threatened', 'broken')),
+  grace_deadline_at TEXT,
+  threatened_assignment_id TEXT,
+  last_submitted_at TEXT,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS pencil_ledger (
+  id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  teacher_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  assignment_id TEXT REFERENCES task_assignments(id) ON DELETE CASCADE,
+  source TEXT NOT NULL CHECK (source IN ('early', 'quality', 'streak', 'adjustment', 'streak_reversal')),
+  amount INTEGER NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pencil_ledger_once
+  ON pencil_ledger(student_id, assignment_id, source) WHERE assignment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_pencil_ledger_student ON pencil_ledger(student_id, created_at);
+CREATE TABLE IF NOT EXISTS streak_events (
+  assignment_id TEXT PRIMARY KEY REFERENCES task_assignments(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  streak_number INTEGER NOT NULL,
+  submitted_at TEXT NOT NULL,
+  streak_bonus INTEGER NOT NULL DEFAULT 0,
+  review_required INTEGER NOT NULL DEFAULT 0,
+  decision TEXT CHECK (decision IN ('keep', 'break')),
+  counted INTEGER NOT NULL DEFAULT 1
+);
+
 CREATE INDEX IF NOT EXISTS idx_tasks_teacher ON tasks(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_class ON tasks(class_id);
 CREATE INDEX IF NOT EXISTS idx_assign_student ON task_assignments(student_id);
