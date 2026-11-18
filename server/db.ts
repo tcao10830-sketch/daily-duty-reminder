@@ -18,7 +18,6 @@ if (process.env.NODE_ENV === 'production' && !cloudPersistenceEnabled) {
 }
 
 // Restore the last cloud snapshot before opening SQLite. The local file is only a working copy.
-const hadLocalDatabase = existsSync(databasePath);
 const cloudSnapshot = cloudPersistenceEnabled ? await downloadDatabaseSnapshot() : null;
 if (cloudSnapshot) {
   for (const suffix of ['', '-wal', '-shm']) {
