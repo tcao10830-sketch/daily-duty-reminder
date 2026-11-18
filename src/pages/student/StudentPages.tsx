@@ -78,6 +78,7 @@ function NoteGrid({ title, notes, empty }: { title: string; notes: AssignmentCar
               penalty={note.penalty}
               color={note.color}
               status={note.status}
+              submissionPending={note.submissionPending}
             />
           ))}
         </div>
@@ -165,6 +166,7 @@ export function MyTasksPage() {
                 penalty={note.penalty}
                 color={note.color}
                 status={note.status}
+              submissionPending={note.submissionPending}
               />
             </div>
           ))}
