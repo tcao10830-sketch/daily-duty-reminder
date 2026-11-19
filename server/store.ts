@@ -97,7 +97,7 @@ function clean(value: unknown, max: number): string {
 
 function requireText(value: unknown, label: string, max: number): string {
   const text = clean(value, max);
-  if (!text) throw new HttpError(400, `${label} is required.`);
+  if (!text) throw new HttpError(400, `Vui lòng nhập ${label}.`);
   return text;
 }
 
@@ -188,14 +188,14 @@ export async function registerTeacher(input: { name: unknown; email: unknown; pa
   const name = requireText(input.name, 'Name', 80);
   const email = requireText(input.email, 'Email', 120).toLowerCase();
   const password = String(input.password ?? '');
-  if (!email.includes('@')) throw new HttpError(400, 'Enter a valid email.');
-  if (password.length < 6) throw new HttpError(400, 'Password must be at least 6 characters.');
+  if (!email.includes('@')) throw new HttpError(400, 'Vui lòng nhập địa chỉ email hợp lệ.');
+  if (password.length < 6) throw new HttpError(400, 'Mật khẩu phải có ít nhất 6 ký tự.');
   const passwordHash = await hashPassword(password);
   return withDb(() => {
     const teacherExists = db.prepare("SELECT id FROM users WHERE role = 'teacher' LIMIT 1").get();
-    if (teacherExists) throw new HttpError(403, 'A teacher account already exists. Please sign in.');
+    if (teacherExists) throw new HttpError(403, 'Đã có tài khoản giáo viên. Vui lòng đăng nhập.');
     const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-    if (existing) throw new HttpError(400, 'That email is already registered.');
+    if (existing) throw new HttpError(400, 'Email này đã được đăng ký.');
     const user: PublicUser = { id: id(), name, email, role: 'teacher' };
     db.prepare('INSERT INTO users (id, email, password_hash, name, role, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
       user.id,
@@ -227,13 +227,13 @@ export async function registerAdditionalTeacher(creatorId: string, input: { name
   const name = requireText(input.name, 'Name', 80);
   const email = requireText(input.email, 'Email', 120).toLowerCase();
   const password = String(input.password ?? '');
-  if (!email.includes('@')) throw new HttpError(400, 'Enter a valid email.');
-  if (password.length < 6) throw new HttpError(400, 'Password must be at least 6 characters.');
+  if (!email.includes('@')) throw new HttpError(400, 'Vui lòng nhập địa chỉ email hợp lệ.');
+  if (password.length < 6) throw new HttpError(400, 'Mật khẩu phải có ít nhất 6 ký tự.');
   const passwordHash = await hashPassword(password);
   return withDb(() => {
     const first = db.prepare("SELECT id FROM users WHERE role = 'teacher' ORDER BY created_at ASC, id ASC LIMIT 1").get() as { id: string } | undefined;
-    if (!first || first.id !== creatorId) throw new HttpError(403, 'Only the first teacher can create teacher accounts.');
-    if (db.prepare('SELECT id FROM users WHERE email = ?').get(email)) throw new HttpError(400, 'That email is already registered.');
+    if (!first || first.id !== creatorId) throw new HttpError(403, 'Chỉ giáo viên đầu tiên mới có thể tạo tài khoản giáo viên.');
+    if (db.prepare('SELECT id FROM users WHERE email = ?').get(email)) throw new HttpError(400, 'Email này đã được đăng ký.');
     const user: PublicUser = { id: id(), name, email, role: 'teacher' };
     db.prepare('INSERT INTO users (id, email, password_hash, name, role, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
       user.id, email, passwordHash, name, 'teacher', nowIso(),
@@ -246,7 +246,7 @@ export async function login(emailRaw: unknown, password: unknown): Promise<Publi
   const email = clean(emailRaw, 120).toLowerCase();
   const row = await withDb(() => db.prepare('SELECT id, email, password_hash, name, role FROM users WHERE email = ?').get(email) as UserRow | undefined);
   if (!row || !(await verifyPassword(String(password ?? ''), row.password_hash))) {
-    throw new HttpError(401, 'Email or password is incorrect.');
+    throw new HttpError(401, 'Email hoặc mật khẩu không chính xác.');
   }
   return { id: row.id, email: row.email, name: row.name, role: row.role };
 }
@@ -268,12 +268,12 @@ export async function updateProfile(userId: string, nameRaw: unknown): Promise<P
 
 export async function changePassword(userId: string, currentPassword: unknown, nextPassword: unknown): Promise<void> {
   const next = String(nextPassword ?? '');
-  if (next.length < 6) throw new HttpError(400, 'Password must be at least 6 characters.');
+  if (next.length < 6) throw new HttpError(400, 'Mật khẩu phải có ít nhất 6 ký tự.');
   const row = await withDb(
     () => db.prepare('SELECT password_hash FROM users WHERE id = ?').get(userId) as { password_hash: string } | undefined,
   );
   if (!row || !(await verifyPassword(String(currentPassword ?? ''), row.password_hash))) {
-    throw new HttpError(400, 'Current password is incorrect.');
+    throw new HttpError(400, 'Mật khẩu hiện tại không chính xác.');
   }
   const passwordHash = await hashPassword(next);
   await withDb(() => {
@@ -321,7 +321,7 @@ export function createClass(teacherId: string, nameRaw: unknown) {
   const name = requireText(nameRaw, 'Class name', 40);
   return withDb(() => {
     const clash = db.prepare('SELECT id FROM classes WHERE teacher_id = ? AND name = ?').get(teacherId, name);
-    if (clash) throw new HttpError(400, 'You already have a class with that name.');
+    if (clash) throw new HttpError(400, 'Bạn đã có một lớp học trùng tên.');
     const classId = id();
     db.prepare('INSERT INTO classes (id, teacher_id, name, created_at) VALUES (?, ?, ?, ?)').run(classId, teacherId, name, nowIso());
     return { id: classId, name, studentCount: 0, students: [], assignedCount: 0, completedCount: 0, pendingCount: 0, overdueCount: 0, completionRate: 0 };
@@ -332,9 +332,9 @@ export function renameClass(teacherId: string, classId: string, nameRaw: unknown
   const name = requireText(nameRaw, 'Class name', 40);
   return withDb(() => {
     const owned = db.prepare('SELECT id FROM classes WHERE id = ? AND teacher_id = ?').get(classId, teacherId);
-    if (!owned) throw new HttpError(404, 'Class not found.');
+    if (!owned) throw new HttpError(404, 'Không tìm thấy lớp học.');
     const clash = db.prepare('SELECT id FROM classes WHERE teacher_id = ? AND name = ? AND id <> ?').get(teacherId, name, classId);
-    if (clash) throw new HttpError(400, 'You already have a class with that name.');
+    if (clash) throw new HttpError(400, 'Bạn đã có một lớp học trùng tên.');
     db.prepare('UPDATE classes SET name = ? WHERE id = ?').run(name, classId);
     return { id: classId, name };
   });
@@ -343,7 +343,7 @@ export function renameClass(teacherId: string, classId: string, nameRaw: unknown
 export function deleteClass(teacherId: string, classId: string) {
   return withDb(() => {
     const owned = db.prepare('SELECT id FROM classes WHERE id = ? AND teacher_id = ?').get(classId, teacherId);
-    if (!owned) throw new HttpError(404, 'Class not found.');
+    if (!owned) throw new HttpError(404, 'Không tìm thấy lớp học.');
     const students = db.prepare('SELECT student_id FROM class_members WHERE class_id = ?').all(classId) as { student_id: string }[];
     db.prepare('DELETE FROM classes WHERE id = ?').run(classId);
     for (const student of students) db.prepare('DELETE FROM users WHERE id = ? AND role = ?').run(student.student_id, 'student');
@@ -356,7 +356,7 @@ export function getClassDetail(teacherId: string, classId: string) {
     const item = db.prepare('SELECT id, name FROM classes WHERE id = ? AND teacher_id = ?').get(classId, teacherId) as
       | { id: string; name: string }
       | undefined;
-    if (!item) throw new HttpError(404, 'Class not found.');
+    if (!item) throw new HttpError(404, 'Không tìm thấy lớp học.');
     const students = db
       .prepare(
         `SELECT u.id, u.name, u.email FROM users u
@@ -386,13 +386,13 @@ export async function addStudent(teacherId: string, classId: string, input: { na
   const name = requireText(input.name, 'Student name', 80);
   const email = requireText(input.email, 'Email', 120).toLowerCase();
   const password = String(input.password ?? '');
-  if (!email.includes('@')) throw new HttpError(400, 'Enter a valid email.');
-  if (password.length < 6) throw new HttpError(400, 'Password must be at least 6 characters.');
+  if (!email.includes('@')) throw new HttpError(400, 'Vui lòng nhập địa chỉ email hợp lệ.');
+  if (password.length < 6) throw new HttpError(400, 'Mật khẩu phải có ít nhất 6 ký tự.');
   const passwordHash = await hashPassword(password);
   return withDb(() => {
     const owned = db.prepare('SELECT id FROM classes WHERE id = ? AND teacher_id = ?').get(classId, teacherId);
-    if (!owned) throw new HttpError(404, 'Class not found.');
-    if (db.prepare('SELECT id FROM users WHERE email = ?').get(email)) throw new HttpError(400, 'That email is already registered.');
+    if (!owned) throw new HttpError(404, 'Không tìm thấy lớp học.');
+    if (db.prepare('SELECT id FROM users WHERE email = ?').get(email)) throw new HttpError(400, 'Email này đã được đăng ký.');
     const studentId = id();
     const created = nowIso();
     db.prepare('INSERT INTO users (id, email, password_hash, name, role, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
@@ -411,10 +411,10 @@ export async function addStudent(teacherId: string, classId: string, input: { na
 export async function updateStudent(teacherId: string, studentId: string, input: { name: unknown; email: unknown; password?: unknown }) {
   const name = requireText(input.name, 'Student name', 80);
   const email = requireText(input.email, 'Email', 120).toLowerCase();
-  if (!email.includes('@')) throw new HttpError(400, 'Enter a valid email.');
+  if (!email.includes('@')) throw new HttpError(400, 'Vui lòng nhập địa chỉ email hợp lệ.');
   const password = String(input.password ?? '');
   const passwordHash = password ? await hashPassword(password) : null;
-  if (password && password.length < 6) throw new HttpError(400, 'Password must be at least 6 characters.');
+  if (password && password.length < 6) throw new HttpError(400, 'Mật khẩu phải có ít nhất 6 ký tự.');
   return withDb(() => {
     const member = db
       .prepare(
@@ -423,9 +423,9 @@ export async function updateStudent(teacherId: string, studentId: string, input:
          WHERE m.student_id = ? AND c.teacher_id = ?`,
       )
       .get(studentId, teacherId);
-    if (!member) throw new HttpError(404, 'Student not found.');
+    if (!member) throw new HttpError(404, 'Không tìm thấy học sinh.');
     const clash = db.prepare('SELECT id FROM users WHERE email = ? AND id <> ?').get(email, studentId);
-    if (clash) throw new HttpError(400, 'That email is already registered.');
+    if (clash) throw new HttpError(400, 'Email này đã được đăng ký.');
     db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(name, email, studentId);
     if (passwordHash) db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, studentId);
     return { id: studentId, name, email };
@@ -441,7 +441,7 @@ export function deleteStudent(teacherId: string, studentId: string) {
          WHERE m.student_id = ? AND c.teacher_id = ?`,
       )
       .get(studentId, teacherId);
-    if (!member) throw new HttpError(404, 'Student not found.');
+    if (!member) throw new HttpError(404, 'Không tìm thấy học sinh.');
     db.prepare('DELETE FROM users WHERE id = ? AND role = ?').run(studentId, 'student');
     return { ok: true };
   });
@@ -454,7 +454,7 @@ function summarizeTask(taskId: string) {
        JOIN classes c ON c.id = t.class_id WHERE t.id = ?`,
     )
     .get(taskId) as Record<string, string> | undefined;
-  if (!task) throw new HttpError(404, 'Task not found.');
+  if (!task) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
   const rows = db.prepare(`${assignmentSelect} WHERE t.id = ?`).all(taskId) as unknown as AssignmentRow[];
   const cards = rows.map(mapAssignment);
   const completed = cards.filter((card) => card.status === 'on_time' || card.status === 'late').length;
@@ -517,14 +517,14 @@ function readTaskInput(input: TaskInput) {
   const assignmentDate = requireText(input.assignmentDate, 'Assignment date', 10);
   const deadlineDate = requireText(input.deadlineDate, 'Deadline date', 10);
   const deadlineTime = requireText(input.deadlineTime, 'Deadline time', 5);
-  if (!isIsoDate(assignmentDate) || !isIsoDate(deadlineDate)) throw new HttpError(400, 'Use real dates.');
-  if (!isHm(deadlineTime)) throw new HttpError(400, 'Use a deadline time like 20:00.');
+  if (!isIsoDate(assignmentDate) || !isIsoDate(deadlineDate)) throw new HttpError(400, 'Vui lòng chọn ngày hợp lệ.');
+  if (!isHm(deadlineTime)) throw new HttpError(400, 'Vui lòng nhập giờ đến hạn theo định dạng 20:00.');
   const priority = String(input.priority) as Priority;
-  if (!PRIORITIES.has(priority)) throw new HttpError(400, 'Choose a priority.');
+  if (!PRIORITIES.has(priority)) throw new HttpError(400, 'Vui lòng chọn mức độ ưu tiên.');
   const color = String(input.color || 'yellow') as NoteColor;
-  if (!COLORS.has(color)) throw new HttpError(400, 'Choose a note color.');
+  if (!COLORS.has(color)) throw new HttpError(400, 'Vui lòng chọn màu ghi chú.');
   const recurrence = String(input.recurrence || 'once') as Recurrence;
-  if (!['once', 'daily', 'weekly', 'custom'].includes(recurrence)) throw new HttpError(400, 'Choose a schedule.');
+  if (!['once', 'daily', 'weekly', 'custom'].includes(recurrence)) throw new HttpError(400, 'Vui lòng chọn lịch lặp lại.');
   const weekdays = Array.isArray(input.weekdays) ? input.weekdays.map(Number).filter((day) => day >= 0 && day <= 6) : [];
   const customDates = Array.isArray(input.customDates) ? input.customDates.map((date) => String(date)) : [];
   const horizonDays = input.horizonDays == null || input.horizonDays === '' ? 14 : Number(input.horizonDays);
@@ -543,7 +543,7 @@ export function createTask(teacherId: string, input: TaskInput) {
     const owned = db.prepare('SELECT id, name FROM classes WHERE id = ? AND teacher_id = ?').get(parsed.classId, teacherId) as
       | { id: string; name: string }
       | undefined;
-    if (!owned) throw new HttpError(404, 'Class not found.');
+    if (!owned) throw new HttpError(404, 'Không tìm thấy lớp học.');
     let studentIds = input.studentIds;
     if (!studentIds) {
       if (parsed.studentId) studentIds = [parsed.studentId];
@@ -555,7 +555,7 @@ export function createTask(teacherId: string, input: TaskInput) {
     }
     for (const studentId of studentIds) {
       const member = db.prepare('SELECT student_id FROM class_members WHERE class_id = ? AND student_id = ?').get(parsed.classId, studentId);
-      if (!member) throw new HttpError(400, 'That student is not in this class.');
+      if (!member) throw new HttpError(400, 'Học sinh này không thuộc lớp đã chọn.');
     }
     const seriesId = id();
     const created = nowIso();
@@ -600,8 +600,8 @@ export function createTask(teacherId: string, input: TaskInput) {
           insertNotification(
             studentId,
             'task_assigned',
-            'New task assigned',
-            `${parsed.title} is due ${instance.deadlineDate} at ${parsed.deadlineTime}.`,
+            'Có nhiệm vụ mới được giao',
+            `${parsed.title} có hạn nộp vào ${instance.deadlineDate} lúc ${parsed.deadlineTime}.`,
             assignmentId,
             events,
           );
@@ -632,7 +632,7 @@ export function listTeacherTasks(teacherId: string) {
 export function getTeacherTask(teacherId: string, taskId: string) {
   return withDb(() => {
     const owned = db.prepare('SELECT id FROM tasks WHERE id = ? AND teacher_id = ?').get(taskId, teacherId);
-    if (!owned) throw new HttpError(404, 'Task not found.');
+    if (!owned) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
     return summarizeTask(taskId);
   });
 }
@@ -645,14 +645,14 @@ export function updateTask(teacherId: string, taskId: string, input: TaskInput &
   const deadlineDate = requireText(input.deadlineDate, 'Deadline date', 10);
   const deadlineTime = requireText(input.deadlineTime, 'Deadline time', 5);
   const assignmentDate = requireText(input.assignmentDate, 'Assignment date', 10);
-  if (!isIsoDate(deadlineDate) || !isIsoDate(assignmentDate) || !isHm(deadlineTime)) throw new HttpError(400, 'Check the dates and time.');
+  if (!isIsoDate(deadlineDate) || !isIsoDate(assignmentDate) || !isHm(deadlineTime)) throw new HttpError(400, 'Vui lòng kiểm tra ngày và giờ.');
   const priority = String(input.priority) as Priority;
   const color = String(input.color) as NoteColor;
-  if (!PRIORITIES.has(priority) || !COLORS.has(color)) throw new HttpError(400, 'Check priority and color.');
+  if (!PRIORITIES.has(priority) || !COLORS.has(color)) throw new HttpError(400, 'Vui lòng kiểm tra mức độ ưu tiên và màu sắc.');
   const applyToSeries = Boolean(input.applyToSeries);
   return withDb(() => {
     const current = db.prepare('SELECT * FROM tasks WHERE id = ? AND teacher_id = ?').get(taskId, teacherId) as Record<string, string> | undefined;
-    if (!current) throw new HttpError(404, 'Task not found.');
+    if (!current) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
     const events: LiveEvent[] = [];
     const updated = nowIso();
     const targets = applyToSeries
@@ -674,9 +674,9 @@ export function updateTask(teacherId: string, taskId: string, input: TaskInput &
       const students = db.prepare('SELECT id, student_id FROM task_assignments WHERE task_id = ?').all(target.id) as { id: string; student_id: string }[];
       for (const student of students) {
         if (deadlineChanged) {
-          insertNotification(student.student_id, 'deadline_changed', 'Task deadline changed', `${title} is now due ${nextDeadlineDate} at ${deadlineTime}.`, `${target.id}:${nextDeadlineDate}:${deadlineTime}`, events);
+          insertNotification(student.student_id, 'deadline_changed', 'Hạn nộp nhiệm vụ đã thay đổi', `${title} hiện có hạn nộp vào ${nextDeadlineDate} lúc ${deadlineTime}.`, `${target.id}:${nextDeadlineDate}:${deadlineTime}`, events);
         } else if (contentChanged) {
-          insertNotification(student.student_id, 'task_updated', 'Task updated', `${title} was updated.`, `${target.id}:${updated}`, events);
+          insertNotification(student.student_id, 'task_updated', 'Nhiệm vụ đã được cập nhật', `${title} đã được cập nhật.`, `${target.id}:${updated}`, events);
         }
       }
     }
@@ -691,7 +691,7 @@ export function updateTask(teacherId: string, taskId: string, input: TaskInput &
 export function duplicateTask(teacherId: string, taskId: string) {
   return withDb(() => {
     const current = db.prepare('SELECT * FROM tasks WHERE id = ? AND teacher_id = ?').get(taskId, teacherId) as Record<string, string> | undefined;
-    if (!current) throw new HttpError(404, 'Task not found.');
+    if (!current) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
     const studentIds = (db.prepare('SELECT student_id FROM task_assignments WHERE task_id = ?').all(taskId) as { student_id: string }[]).map((row) => row.student_id);
     return {
       classId: current.class_id,
@@ -713,12 +713,12 @@ export function duplicateTask(teacherId: string, taskId: string) {
 export function cancelTask(teacherId: string, taskId: string) {
   return withDb(() => {
     const current = db.prepare('SELECT * FROM tasks WHERE id = ? AND teacher_id = ?').get(taskId, teacherId) as Record<string, string> | undefined;
-    if (!current) throw new HttpError(404, 'Task not found.');
+    if (!current) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
     const events: LiveEvent[] = [];
     db.prepare(`UPDATE tasks SET status = 'cancelled', updated_at = ? WHERE id = ?`).run(nowIso(), taskId);
     const students = db.prepare('SELECT student_id FROM task_assignments WHERE task_id = ?').all(taskId) as { student_id: string }[];
     for (const student of students) {
-      insertNotification(student.student_id, 'task_updated', 'Task cancelled', `${current.title} was cancelled.`, `${taskId}:cancelled`, events);
+      insertNotification(student.student_id, 'task_updated', 'Nhiệm vụ đã bị hủy', `Nhiệm vụ ${current.title} đã bị hủy.`, `${taskId}:cancelled`, events);
     }
     const detail = summarizeTask(taskId);
     return { ...detail, events };
@@ -731,11 +731,11 @@ export function cancelTask(teacherId: string, taskId: string) {
 export function deleteTask(teacherId: string, taskId: string) {
   return withDb(() => {
     const current = db.prepare('SELECT * FROM tasks WHERE id = ? AND teacher_id = ?').get(taskId, teacherId) as Record<string, string> | undefined;
-    if (!current) throw new HttpError(404, 'Task not found.');
+    if (!current) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
     const events: LiveEvent[] = [];
     const students = db.prepare('SELECT student_id FROM task_assignments WHERE task_id = ?').all(taskId) as { student_id: string }[];
     for (const student of students) {
-      insertNotification(student.student_id, 'task_updated', 'Task deleted', `${current.title} was deleted.`, `${taskId}:deleted`, events);
+      insertNotification(student.student_id, 'task_updated', 'Nhiệm vụ đã bị xóa', `Nhiệm vụ ${current.title} đã bị xóa.`, `${taskId}:deleted`, events);
     }
     db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
     return { events };
@@ -747,14 +747,14 @@ export function deleteTask(teacherId: string, taskId: string) {
 
 function recordCompletion(studentId: string, assignmentId: string, completedAt: string) {
   const row = db.prepare(`${assignmentSelect} WHERE a.id = ?`).get(assignmentId) as unknown as AssignmentRow | undefined;
-  if (!row || row.student_id !== studentId || row.task_status !== 'active') throw new HttpError(404, 'Task not found.');
+  if (!row || row.student_id !== studentId || row.task_status !== 'active') throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
   const events: LiveEvent[] = [];
   db.exec('BEGIN IMMEDIATE');
   try {
     const existing = db.prepare('SELECT id FROM task_completions WHERE assignment_id = ?').get(assignmentId);
     if (existing) {
       db.exec('ROLLBACK');
-      throw new HttpError(409, 'This task is already marked complete.');
+      throw new HttpError(409, 'Nhiệm vụ này đã được đánh dấu hoàn thành.');
     }
     db.prepare('INSERT INTO task_completions (id, assignment_id, completed_at) VALUES (?, ?, ?)').run(id(), assignmentId, completedAt);
     db.prepare('UPDATE task_assignments SET in_progress = 0, submitted_at = NULL WHERE id = ?').run(assignmentId);
@@ -766,7 +766,7 @@ function recordCompletion(studentId: string, assignmentId: string, completedAt: 
     } catch {
       /* already closed */
     }
-    if (String(error).includes('UNIQUE')) throw new HttpError(409, 'This task is already marked complete.');
+    if (String(error).includes('UNIQUE')) throw new HttpError(409, 'Nhiệm vụ này đã được đánh dấu hoàn thành.');
     throw error;
   }
   const fresh = db.prepare(`${assignmentSelect} WHERE a.id = ?`).get(assignmentId) as unknown as AssignmentRow;
@@ -775,8 +775,8 @@ function recordCompletion(studentId: string, assignmentId: string, completedAt: 
   insertNotification(
     row.teacher_id,
     'task_completed',
-    'Student completed a task',
-    `${row.student_name} completed “${row.title}”. Class progress: ${totals.completedCount}/${totals.assignedCount} (${totals.completionRate}%).`,
+    'Học sinh đã hoàn thành nhiệm vụ',
+    `${row.student_name} đã hoàn thành “${row.title}”. Tiến độ lớp: ${totals.completedCount}/${totals.assignedCount} (${totals.completionRate}%).`,
     assignmentId,
     events,
   );
@@ -800,11 +800,11 @@ export function completeAssignmentAt(studentId: string, assignmentId: string, co
 export function reopenAssignment(teacherId: string, assignmentId: string) {
   return withDb(() => {
     const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND t.teacher_id = ?`).get(assignmentId, teacherId) as unknown as AssignmentRow | undefined;
-    if (!row) throw new HttpError(404, 'Assignment not found.');
+    if (!row) throw new HttpError(404, 'Không tìm thấy lượt giao nhiệm vụ.');
     db.prepare('DELETE FROM task_completions WHERE assignment_id = ?').run(assignmentId);
     db.prepare('UPDATE task_assignments SET in_progress = 0, submitted_at = NULL, revision_deadline_at = NULL WHERE id = ?').run(assignmentId);
     const events: LiveEvent[] = [];
-    insertNotification(row.student_id, 'task_updated', 'Task reopened', `${row.title} was reopened by your teacher.`, `${assignmentId}:reopened:${nowIso()}`, events);
+    insertNotification(row.student_id, 'task_updated', 'Nhiệm vụ đã được mở lại', `Giáo viên đã mở lại nhiệm vụ “${row.title}”.`, `${assignmentId}:reopened:${nowIso()}`, events);
     const fresh = db.prepare(`${assignmentSelect} WHERE a.id = ?`).get(assignmentId) as unknown as AssignmentRow;
     return { card: mapAssignment(fresh), events };
   }).then((result) => {
@@ -816,8 +816,8 @@ export function reopenAssignment(teacherId: string, assignmentId: string) {
 export function markAssignmentSubmitted(studentId: string, assignmentId: string, submittedAt: string) {
   return withDb(() => {
     const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND a.student_id = ? AND t.status = 'active'`).get(assignmentId, studentId) as AssignmentRow | undefined;
-    if (!row) throw new HttpError(404, 'Task not found.');
-    if (row.completed_at) throw new HttpError(409, 'This task is already complete.');
+    if (!row) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
+    if (row.completed_at) throw new HttpError(409, 'Nhiệm vụ này đã hoàn thành.');
     db.prepare('UPDATE task_assignments SET submitted_at = ?, in_progress = 0 WHERE id = ?').run(submittedAt, assignmentId);
     recordSubmissionRewardsLocked(studentId, assignmentId, submittedAt);
     return mapAssignment(db.prepare(`${assignmentSelect} WHERE a.id = ?`).get(assignmentId) as AssignmentRow);
@@ -827,12 +827,12 @@ export function markAssignmentSubmitted(studentId: string, assignmentId: string,
 export function requestAssignmentRevision(teacherId: string, assignmentId: string, reviewedAt: string) {
   return withDb(() => {
     const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND t.teacher_id = ?`).get(assignmentId, teacherId) as AssignmentRow | undefined;
-    if (!row) throw new HttpError(404, 'Assignment not found.');
+    if (!row) throw new HttpError(404, 'Không tìm thấy lượt giao nhiệm vụ.');
     const revisionDeadline = new Date(new Date(reviewedAt).getTime() + 48 * 60 * 60 * 1000).toISOString();
     db.prepare('UPDATE task_assignments SET submitted_at = NULL, revision_deadline_at = ?, in_progress = 0 WHERE id = ?').run(revisionDeadline, assignmentId);
     flagStreakRevisionLocked(teacherId, assignmentId);
     const events: LiveEvent[] = [];
-    insertNotification(row.student_id, 'task_revision_requested', 'Revision requested', `Your teacher asked you to revise “${row.title}”.`, `${assignmentId}:revision:${reviewedAt}`, events);
+    insertNotification(row.student_id, 'task_revision_requested', 'Giáo viên yêu cầu chỉnh sửa', `Giáo viên yêu cầu bạn chỉnh sửa bài “${row.title}”.`, `${assignmentId}:revision:${reviewedAt}`, events);
     publish(events);
     return { revisionDeadlineAt: revisionDeadline };
   });
@@ -843,8 +843,8 @@ export function startAssignment(studentId: string, assignmentId: string) {
     const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND a.student_id = ? AND t.status = 'active'`).get(assignmentId, studentId) as
       | AssignmentRow
       | undefined;
-    if (!row) throw new HttpError(404, 'Task not found.');
-    if (row.completed_at) throw new HttpError(409, 'This task is already marked complete.');
+    if (!row) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
+    if (row.completed_at) throw new HttpError(409, 'Nhiệm vụ này đã được đánh dấu hoàn thành.');
     db.prepare('UPDATE task_assignments SET in_progress = 1 WHERE id = ?').run(assignmentId);
     const fresh = db.prepare(`${assignmentSelect} WHERE a.id = ?`).get(assignmentId) as unknown as AssignmentRow;
     return mapAssignment(fresh);
@@ -938,7 +938,7 @@ export function studentTask(studentId: string, assignmentId: string) {
     const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND a.student_id = ? AND t.status = 'active'`).get(assignmentId, studentId) as
       | AssignmentRow
       | undefined;
-    if (!row) throw new HttpError(404, 'Task not found.');
+    if (!row) throw new HttpError(404, 'Không tìm thấy nhiệm vụ.');
     return mapAssignment(row);
   });
 }
@@ -954,7 +954,7 @@ export function studentProgress(teacherId: string, studentId: string) {
          WHERE u.id = ? AND c.teacher_id = ?`,
       )
       .get(studentId, teacherId) as { id: string; name: string; email: string; class_name: string; class_id: string } | undefined;
-    if (!student) throw new HttpError(404, 'Student not found.');
+    if (!student) throw new HttpError(404, 'Không tìm thấy học sinh.');
     const rows = db.prepare(`${assignmentSelect} WHERE a.student_id = ? AND t.status = 'active' ORDER BY t.deadline_date DESC`).all(studentId) as unknown as AssignmentRow[];
     const cards = rows.map(mapAssignment);
     return { student, stats: statsFrom(cards), assignments: cards, weekly: weekBuckets(cards) };
@@ -1018,10 +1018,10 @@ function sweepLocked(): void {
   for (const row of rows) {
     const deadline = row.revision_deadline_at ? new Date(row.revision_deadline_at).getTime() : deadlineMs(row.deadline_date, row.deadline_time);
     if (now > deadline) {
-      insertNotification(row.student_id, 'task_overdue', 'Task overdue', `${row.title} is past the deadline. Penalty: ${row.penalty || 'None'}.`, row.assignment_id, events);
-      insertNotification(row.teacher_id, 'student_overdue', 'Task became overdue', `${row.student_name} has not completed “${row.title}”.`, row.assignment_id, events);
+      insertNotification(row.student_id, 'task_overdue', 'Nhiệm vụ đã quá hạn', `Nhiệm vụ “${row.title}” đã quá hạn. Hình phạt: ${row.penalty || 'Không có'}.`, row.assignment_id, events);
+      insertNotification(row.teacher_id, 'student_overdue', 'Nhiệm vụ của học sinh đã quá hạn', `${row.student_name} chưa hoàn thành “${row.title}”.`, row.assignment_id, events);
     } else if (deadline - now <= 3 * 60 * 60 * 1000) {
-      insertNotification(row.student_id, 'deadline_soon', 'Deadline approaching', `${row.title} is due ${row.deadline_date} at ${row.deadline_time}.`, row.assignment_id, events);
+      insertNotification(row.student_id, 'deadline_soon', 'Sắp đến hạn nộp', `Nhiệm vụ “${row.title}” có hạn nộp vào ${row.deadline_date} lúc ${row.deadline_time}.`, row.assignment_id, events);
     }
   }
   publish(events);
