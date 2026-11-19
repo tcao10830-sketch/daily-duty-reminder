@@ -2,26 +2,26 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { useAuth } from './context/AuthContext';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
-import { Phần thưởngPage } from './pages/teacher/Phần thưởngPage';
-import { Thành tíchPage } from './pages/student/Thành tíchPage';
-import { LớpPage, Lớp họcPage } from './pages/teacher/Lớp họcPage';
-import { Tổng quanPage } from './pages/teacher/Tổng quanPage';
-import { Thông báoPage, ProgressPage, Cài đặtPage, Học sinhProgressPage, TeacherLịchPage } from './pages/teacher/MorePages';
-import { NewNhiệm vụPage, Nhiệm vụDetailPage, Nhiệm vụChỉnh sửaPage, Nhiệm vụPage } from './pages/teacher/Nhiệm vụPage';
-import { MyNhiệm vụPage, Hồ sơPage, Học sinhLịchPage, Học sinhTrang chủPage, Học sinhThông báoPage, Học sinhProgressPage as MyProgressPage, Học sinhNhiệm vụPage } from './pages/student/Học sinhPages';
+import { RewardsPage } from './pages/teacher/RewardsPage';
+import { AchievementsPage } from './pages/student/AchievementsPage';
+import { ClassPage, ClassesPage } from './pages/teacher/ClassesPage';
+import { DashboardPage } from './pages/teacher/DashboardPage';
+import { NotificationsPage, ProgressPage, SettingsPage, StudentProgressPage, TeacherCalendarPage } from './pages/teacher/MorePages';
+import { NewTaskPage, TaskDetailPage, TaskEditPage, TasksPage } from './pages/teacher/TasksPage';
+import { MyTasksPage, ProfilePage, StudentCalendarPage, StudentHomePage, StudentNotificationsPage, StudentProgressPage as MyProgressPage, StudentTaskPage } from './pages/student/StudentPages';
 import type { Role } from './types';
 
 function Guard({ role }: { role: Role }) {
   const { user, ready } = useAuth();
-  if (!ready) return <p classHọ và tên="grid min-h-screen place-items-center font-extrabold text-[#4F87FF]">Đang tải…</p>;
+  if (!ready) return <p className="grid min-h-screen place-items-center font-extrabold text-[#4F87FF]">Loading…</p>;
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== role) return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
   return <AppShell />;
 }
 
-function Trang chủRedirect() {
+function HomeRedirect() {
   const { user, ready } = useAuth();
-  if (!ready) return <p classHọ và tên="grid min-h-screen place-items-center font-extrabold text-[#4F87FF]">Đang tải…</p>;
+  if (!ready) return <p className="grid min-h-screen place-items-center font-extrabold text-[#4F87FF]">Loading…</p>;
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
 }
@@ -31,33 +31,33 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/" element={<Trang chủRedirect />} />
+      <Route path="/" element={<HomeRedirect />} />
       <Route element={<Guard role="teacher" />}>
-        <Route path="/teacher" element={<Tổng quanPage />} />
-        <Route path="/teacher/classes" element={<Lớp họcPage />} />
-        <Route path="/teacher/classes/:id" element={<LớpPage />} />
-        <Route path="/teacher/tasks" element={<Nhiệm vụPage />} />
-        <Route path="/teacher/tasks/new" element={<NewNhiệm vụPage />} />
-        <Route path="/teacher/tasks/:id" element={<Nhiệm vụDetailPage />} />
-        <Route path="/teacher/tasks/:id/edit" element={<Nhiệm vụChỉnh sửaPage />} />
-        <Route path="/teacher/calendar" element={<TeacherLịchPage />} />
+        <Route path="/teacher" element={<DashboardPage />} />
+        <Route path="/teacher/classes" element={<ClassesPage />} />
+        <Route path="/teacher/classes/:id" element={<ClassPage />} />
+        <Route path="/teacher/tasks" element={<TasksPage />} />
+        <Route path="/teacher/tasks/new" element={<NewTaskPage />} />
+        <Route path="/teacher/tasks/:id" element={<TaskDetailPage />} />
+        <Route path="/teacher/tasks/:id/edit" element={<TaskEditPage />} />
+        <Route path="/teacher/calendar" element={<TeacherCalendarPage />} />
         <Route path="/teacher/progress" element={<ProgressPage />} />
-        <Route path="/teacher/rewards" element={<Phần thưởngPage />} />
-        <Route path="/teacher/progress/:id" element={<Học sinhProgressPage />} />
-        <Route path="/teacher/notifications" element={<Thông báoPage />} />
-        <Route path="/teacher/settings" element={<Cài đặtPage />} />
+        <Route path="/teacher/rewards" element={<RewardsPage />} />
+        <Route path="/teacher/progress/:id" element={<StudentProgressPage />} />
+        <Route path="/teacher/notifications" element={<NotificationsPage />} />
+        <Route path="/teacher/settings" element={<SettingsPage />} />
       </Route>
       <Route element={<Guard role="student" />}>
-        <Route path="/student" element={<Học sinhTrang chủPage />} />
-        <Route path="/student/tasks" element={<MyNhiệm vụPage />} />
-        <Route path="/student/tasks/:id" element={<Học sinhNhiệm vụPage />} />
-        <Route path="/student/calendar" element={<Học sinhLịchPage />} />
+        <Route path="/student" element={<StudentHomePage />} />
+        <Route path="/student/tasks" element={<MyTasksPage />} />
+        <Route path="/student/tasks/:id" element={<StudentTaskPage />} />
+        <Route path="/student/calendar" element={<StudentCalendarPage />} />
         <Route path="/student/progress" element={<MyProgressPage />} />
-        <Route path="/student/achievements" element={<Thành tíchPage />} />
-        <Route path="/student/notifications" element={<Học sinhThông báoPage />} />
-        <Route path="/student/profile" element={<Hồ sơPage />} />
+        <Route path="/student/achievements" element={<AchievementsPage />} />
+        <Route path="/student/notifications" element={<StudentNotificationsPage />} />
+        <Route path="/student/profile" element={<ProfilePage />} />
       </Route>
-      <Route path="*" element={<Trang chủRedirect />} />
+      <Route path="*" element={<HomeRedirect />} />
     </Routes>
   );
 }
