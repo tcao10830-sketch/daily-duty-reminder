@@ -68,7 +68,7 @@ export function StickyNote({
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs font-extrabold">
         <span className="rounded-full bg-white/70 px-2 py-1">{className}</span>
         {studentName ? <span className="rounded-full bg-white/70 px-2 py-1">{studentName}</span> : null}
-        {wholeClass ? <span className="rounded-full bg-white/70 px-2 py-1">Whole class</span> : null}
+        {wholeClass ? <span className="rounded-full bg-white/70 px-2 py-1">Cả lớp</span> : null}
       </div>
       <dl className="mt-3 space-y-1 text-sm font-bold">
         <div>Assigned {formatLongDate(assignmentDate)}</div>
@@ -82,10 +82,10 @@ export function StickyNote({
         ) : null}
       </dl>
       <p className="mt-2 text-xs font-bold">
-        <span className="font-extrabold">Penalty: </span>
-        {penalty || 'None'}
+        <span className="font-extrabold">Hình phạt: </span>
+        {penalty || 'Không có'}
       </p>
-      {submissionPending ? <p className="mt-2 text-xs font-extrabold text-[#315fc4]">Submitted · waiting for teacher review</p> : null}
+      {submissionPending ? <p className="mt-2 text-xs font-extrabold text-[#315fc4]">Đã nộp · đang chờ giáo viên xem bài</p> : null}
       <div className="mt-3 flex items-center justify-between gap-2">
         {status ? <StatusPill status={status} /> : <span />}
         {footer ? <span className="text-xs font-extrabold">{footer}</span> : null}
