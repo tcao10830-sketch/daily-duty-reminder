@@ -30,7 +30,7 @@ export function RewardsPage() {
     setBusy(true); setMessage('');
     try {
       await api('/api/teacher/rewards/early-rules', { method: 'PUT', body: JSON.stringify({ rules }) });
-      setMessage('Early-submission reward rules saved.');
+      setMessage('Đã lưu quy tắc thưởng nộp bài sớm.');
       bump();
     } catch (err) { setMessage(err instanceof Error ? err.message : 'Could not save rules.'); }
     finally { setBusy(false); }
@@ -40,7 +40,7 @@ export function RewardsPage() {
     setBusy(true); setMessage('');
     try {
       await api(`/api/teacher/rewards/streaks/${assignmentId}/decision`, { method: 'POST', body: JSON.stringify({ decision }) });
-      setMessage(decision === 'keep' ? 'Streak allowed to continue.' : 'Streak reset.');
+      setMessage(decision === 'keep' ? 'Đã cho phép tiếp tục chuỗi.' : 'Đã đặt lại chuỗi.');
       bump();
     } catch (err) { setMessage(err instanceof Error ? err.message : 'Could not save decision.'); }
     finally { setBusy(false); }
@@ -55,20 +55,20 @@ export function RewardsPage() {
       });
       setAmounts((current) => ({ ...current, [studentId]: '' }));
       setNotes((current) => ({ ...current, [studentId]: '' }));
-      setMessage('Pencil balance adjusted.');
+      setMessage('Đã điều chỉnh số dư bút chì.');
       bump();
-    } catch (err) { setMessage(err instanceof Error ? err.message : 'Could not adjust balance.'); }
+    } catch (err) { setMessage(err instanceof Error ? err.message : 'Không thể điều chỉnh số dư.'); }
     finally { setBusy(false); }
   }
 
   async function resetStreak(studentId: string, name: string) {
-    if (!window.confirm(`Reset the current streak for ${name}?`)) return;
+    if (!window.confirm(`Bạn có chắc muốn đặt lại chuỗi hiện tại của ${name}?`)) return;
     setBusy(true); setMessage('');
     try {
       await api(`/api/teacher/rewards/students/${studentId}/streak-reset`, { method: 'POST' });
-      setMessage(`${name}'s streak has been reset.`);
+      setMessage(`Đã đặt lại chuỗi thành tích của ${name}.`);
       bump();
-    } catch (err) { setMessage(err instanceof Error ? err.message : 'Could not reset streak.'); }
+    } catch (err) { setMessage(err instanceof Error ? err.message : 'Không thể đặt lại chuỗi.'); }
     finally { setBusy(false); }
   }
 
@@ -78,24 +78,24 @@ export function RewardsPage() {
   return (
     <div className="grid gap-4">
       <div>
-        <h1 className="text-2xl font-extrabold">Pencil rewards & streaks</h1>
-        <p className="mt-1 text-sm font-semibold text-slate-500">Manage early-submission rewards, student balances and streak decisions.</p>
+        <h1 className="text-2xl font-extrabold">Quản lý bút chì và chuỗi thành tích</h1>
+        <p className="mt-1 text-sm font-semibold text-slate-500">Quản lý thưởng nộp bài sớm, số dư bút chì và quyết định duy trì chuỗi thành tích.</p>
       </div>
       {message ? <Banner tone="ok">{message}</Banner> : null}
 
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-extrabold">Early-submission reward rules</h2>
-        <p className="mt-1 text-sm text-slate-500">Set how many pencils students earn when they submit this many hours before the deadline. The highest matching threshold applies. Leave empty to disable this reward.</p>
+        <h2 className="text-lg font-extrabold">Quy tắc thưởng nộp bài sớm</h2>
+        <p className="mt-1 text-sm text-slate-500">Thiết lập số bút chì học sinh nhận được khi nộp bài sớm hơn hạn nộp một khoảng thời gian nhất định. Mốc cao nhất phù hợp sẽ được áp dụng. Để trống nếu muốn tắt phần thưởng này.</p>
         <div className="mt-3 grid gap-2">
           {rules.map((rule, index) => (
             <div key={index} className="flex flex-wrap items-center gap-2 rounded-xl bg-[#f7f9fc] p-2">
-              <span className="font-bold">At least</span>
+              <span className="font-bold">Ít nhất</span>
               <strong>{rule.hours} hours early</strong>
               <span className="font-bold">= +{rule.pencils} ✏️</span>
-              <button type="button" className="ml-auto rounded-lg px-3 py-1 font-bold text-red-600" onClick={() => setRules((current) => current.filter((_, i) => i !== index))}>Remove</button>
+              <button type="button" className="ml-auto rounded-lg px-3 py-1 font-bold text-red-600" onClick={() => setRules((current) => current.filter((_, i) => i !== index))}>Xóa</button>
             </div>
           ))}
-          {rules.length === 0 ? <p className="text-sm text-slate-400">No early-submission rewards configured.</p> : null}
+          {rules.length === 0 ? <p className="text-sm text-slate-400">Chưa thiết lập phần thưởng nộp bài sớm.</p> : null}
         </div>
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="grid gap-1 text-sm font-bold">Hours early
@@ -107,36 +107,36 @@ export function RewardsPage() {
           <Button tone="blue" onClick={() => {
             const h = Number(hours), p = Number(pencils);
             if (!Number.isInteger(h) || h < 1 || h > 720 || !Number.isInteger(p) || p < 1 || p > 100 || rules.some((item) => item.hours === h)) {
-              setMessage('Enter a valid threshold and a unique number of hours.');
+              setMessage('Hãy nhập mốc thời gian hợp lệ và số giờ không trùng lặp.');
               return;
             }
             setRules((current) => [...current, { hours: h, pencils: p }].sort((a, b) => b.hours - a.hours));
             setMessage('');
-          }}>Add rule</Button>
-          <Button disabled={busy} onClick={() => void saveRules()}>Save rules</Button>
+          }}>Thêm quy tắc</Button>
+          <Button disabled={busy} onClick={() => void saveRules()}>Lưu quy tắc</Button>
         </div>
       </section>
 
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-extrabold">Needs revision · streak decision</h2>
-        <p className="mt-1 text-sm text-slate-500">The student has already submitted and counted toward the streak. Decide whether the streak is allowed to continue after the revision request.</p>
+        <h2 className="text-lg font-extrabold">Cần chỉnh sửa · quyết định duy trì chuỗi</h2>
+        <p className="mt-1 text-sm text-slate-500">Học sinh đã nộp bài và được tính vào chuỗi thành tích. Hãy quyết định có tiếp tục duy trì chuỗi sau yêu cầu chỉnh sửa hay không.</p>
         <div className="mt-3 grid gap-3">
           {data.pendingReviews.map((item) => (
             <div key={item.assignment_id} className="rounded-2xl border border-orange-200 bg-orange-50 p-3">
               <p className="font-extrabold">{item.student_name} · {item.class_name}</p>
               <p className="text-sm font-semibold">{item.title} · streak task #{item.streak_number}</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Button tone="green" disabled={busy} onClick={() => void decide(item.assignment_id, 'keep')}>Allow streak to continue</Button>
-                <Button tone="red" disabled={busy} onClick={() => void decide(item.assignment_id, 'break')}>Reset streak</Button>
+                <Button tone="green" disabled={busy} onClick={() => void decide(item.assignment_id, 'keep')}>Cho phép tiếp tục chuỗi</Button>
+                <Button tone="red" disabled={busy} onClick={() => void decide(item.assignment_id, 'break')}>Đặt lại chuỗi</Button>
               </div>
             </div>
           ))}
-          {data.pendingReviews.length === 0 ? <Empty>No streak decisions waiting for you.</Empty> : null}
+          {data.pendingReviews.length === 0 ? <Empty>Không có quyết định duy trì chuỗi nào đang chờ.</Empty> : null}
         </div>
       </section>
 
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-extrabold">Student reward management</h2>
+        <h2 className="text-lg font-extrabold">Quản lý phần thưởng học sinh</h2>
         <div className="mt-3 grid gap-3">
           {data.students.map((student) => (
             <div key={student.id} className="rounded-2xl border border-slate-100 p-3">
@@ -147,18 +147,18 @@ export function RewardsPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-extrabold">{student.total_pencils} ✏️</p>
-                  <p className="text-xs font-bold text-slate-500">{student.current_streak} task streak · {student.streak_status}</p>
+                  <p className="text-xs font-bold text-slate-500">{student.current_streak} nhiệm vụ liên tiếp · {student.streak_status}</p>
                 </div>
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-[110px_1fr_auto]">
                 <input className="rounded-xl border p-2" type="number" placeholder="+ / -" value={amounts[student.id] ?? ''} onChange={(event) => setAmounts((current) => ({ ...current, [student.id]: event.target.value }))} />
-                <input className="rounded-xl border p-2" placeholder="Reason for adjustment" value={notes[student.id] ?? ''} onChange={(event) => setNotes((current) => ({ ...current, [student.id]: event.target.value }))} />
-                <Button tone="blue" disabled={busy || !amounts[student.id] || !notes[student.id]} onClick={() => void adjust(student.id)}>Adjust pencils</Button>
+                <input className="rounded-xl border p-2" placeholder="Lý do điều chỉnh" value={notes[student.id] ?? ''} onChange={(event) => setNotes((current) => ({ ...current, [student.id]: event.target.value }))} />
+                <Button tone="blue" disabled={busy || !amounts[student.id] || !notes[student.id]} onClick={() => void adjust(student.id)}>Điều chỉnh bút chì</Button>
               </div>
-              <button type="button" disabled={busy || student.current_streak === 0} className="mt-2 text-sm font-extrabold text-red-600 disabled:opacity-40" onClick={() => void resetStreak(student.id, student.name)}>Reset current streak</button>
+              <button type="button" disabled={busy || student.current_streak === 0} className="mt-2 text-sm font-extrabold text-red-600 disabled:opacity-40" onClick={() => void resetStreak(student.id, student.name)}>Đặt lại chuỗi hiện tại</button>
             </div>
           ))}
-          {data.students.length === 0 ? <Empty>No students yet.</Empty> : null}
+          {data.students.length === 0 ? <Empty>Chưa có học sinh nào.</Empty> : null}
         </div>
       </section>
     </div>
