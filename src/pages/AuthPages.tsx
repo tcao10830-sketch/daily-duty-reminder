@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Banner, Button, Field, controlClass } from '../components/ui';
+import { Banner, Button, Field, controlLớp } from '../components/ui';
 import { api } from '../lib/api';
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('giaovien@school.test');
-  const [password, setPassword] = useState('demo1234');
+  const [password, setMật khẩu] = useState('demo1234');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [hasTeacher, setHasTeacher] = useState<boolean | null>(null);
   useEffect(() => { api<{ hasTeacher: boolean }>('/api/auth/setup').then((result) => setHasTeacher(result.hasTeacher)).catch(() => setHasTeacher(true)); }, []);
 
-  async function submit(nextEmail = email, nextPassword = password) {
+  async function submit(nextEmail = email, nextMật khẩu = password) {
     setBusy(true);
     setError('');
     try {
-      const user = await login(nextEmail, nextPassword);
+      const user = await login(nextEmail, nextMật khẩu);
       navigate(user.role === 'teacher' ? '/teacher' : '/student');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed.');
@@ -28,9 +28,9 @@ export function LoginPage() {
   }
 
   return (
-    <AuthCard title="Welcome back" subtitle="Assign duties, track deadlines, and see who finished.">
+    <AuthCard title="Chào mừng quay trở lại" subtitle="Giao nhiệm vụ, theo dõi hạn nộp và xem tiến độ hoàn thành.">
       <form
-        className="grid gap-3"
+        classHọ và tên="grid gap-3"
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
@@ -38,24 +38,24 @@ export function LoginPage() {
       >
         {error ? <Banner tone="error">{error}</Banner> : null}
         <Field label="Email">
-          <input className={controlClass} data-testid="login-email" value={email} onChange={(event) => setEmail(event.target.value)} />
+          <input classHọ và tên={controlLớp} data-testid="login-email" value={email} onChange={(event) => setEmail(event.target.value)} />
         </Field>
-        <Field label="Password">
-          <input className={controlClass} data-testid="login-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        <Field label="Mật khẩu">
+          <input classHọ và tên={controlLớp} data-testid="login-password" type="password" value={password} onChange={(event) => setMật khẩu(event.target.value)} />
         </Field>
         <Button type="submit" disabled={busy} testId="login-submit">
-          {busy ? 'Signing in…' : 'Log in'}
+          {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
         </Button>
       </form>
-      <div className="mt-4 grid gap-2">
-        <button type="button" className="rounded-2xl bg-[#FFF3B0] px-3 py-2 text-left text-sm font-extrabold" onClick={() => void submit('giaovien@school.test', 'demo1234')}>
-          Demo teacher · giaovien@school.test
+      <div classHọ và tên="mt-4 grid gap-2">
+        <button type="button" classHọ và tên="rounded-2xl bg-[#FFF3B0] px-3 py-2 text-left text-sm font-extrabold" onClick={() => void submit('giaovien@school.test', 'demo1234')}>
+          Tài khoản giáo viên mẫu · giaovien@school.test
         </button>
-        <button type="button" className="rounded-2xl bg-[#D6E6FF] px-3 py-2 text-left text-sm font-extrabold" onClick={() => void submit('an.10a1@school.test', 'demo1234')} data-testid="demo-student">
-          Demo student · an.10a1@school.test
+        <button type="button" classHọ và tên="rounded-2xl bg-[#D6E6FF] px-3 py-2 text-left text-sm font-extrabold" onClick={() => void submit('an.10a1@school.test', 'demo1234')} data-testid="demo-student">
+          Tài khoản học sinh mẫu · an.10a1@school.test
         </button>
       </div>
-      {hasTeacher === false ? <p className="mt-4 text-sm font-bold">First teacher? <Link className="text-[#315fbf]" to="/register">Create the first account</Link></p> : null}
+      {hasTeacher === false ? <p classHọ và tên="mt-4 text-sm font-bold">Bạn là giáo viên đầu tiên? <Link classHọ và tên="text-[#315fbf]" to="/register">Tạo tài khoản đầu tiên</Link></p> : null}
     </AuthCard>
   );
 }
@@ -63,21 +63,21 @@ export function LoginPage() {
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [name, setName] = useState('');
+  const [name, setHọ và tên] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setMật khẩu] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [setupReady, setSetupReady] = useState(false);
   const [hasTeacher, setHasTeacher] = useState(true);
   useEffect(() => { api<{ hasTeacher: boolean }>('/api/auth/setup').then((result) => setHasTeacher(result.hasTeacher)).catch(() => setHasTeacher(true)).finally(() => setSetupReady(true)); }, []);
-  if (!setupReady) return <AuthCard title="Checking setup" subtitle="Please wait…"><p className="font-bold text-slate-500">Loading account setup.</p></AuthCard>;
-  if (hasTeacher) return <AuthCard title="Registration closed" subtitle="Teacher accounts are managed by the first teacher."><Banner tone="error">A teacher account already exists. Ask the first teacher to create an account for you.</Banner><p className="mt-4 text-sm font-bold"><Link className="text-[#315fbf]" to="/login">Back to log in</Link></p></AuthCard>;
+  if (!setupReady) return <AuthCard title="Đang kiểm tra thiết lập" subtitle="Vui lòng chờ…"><p classHọ và tên="font-bold text-slate-500">Đang tải thiết lập tài khoản.</p></AuthCard>;
+  if (hasTeacher) return <AuthCard title="Đã đóng đăng ký" subtitle="Tài khoản giáo viên được quản lý bởi giáo viên đầu tiên."><Banner tone="error">Đã có tài khoản giáo viên. Hãy nhờ giáo viên đầu tiên tạo tài khoản cho bạn.</Banner><p classHọ và tên="mt-4 text-sm font-bold"><Link classHọ và tên="text-[#315fbf]" to="/login">Quay lại đăng nhập</Link></p></AuthCard>;
 
   return (
-    <AuthCard title="Teacher sign up" subtitle="Student accounts are created inside a class.">
+    <AuthCard title="Đăng ký tài khoản giáo viên" subtitle="Tài khoản học sinh được tạo trong từng lớp học.">
       <form
-        className="grid gap-3"
+        classHọ và tên="grid gap-3"
         onSubmit={(event) => {
           event.preventDefault();
           setBusy(true);
@@ -89,19 +89,19 @@ export function RegisterPage() {
         }}
       >
         {error ? <Banner tone="error">{error}</Banner> : null}
-        <Field label="Name">
-          <input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} required />
+        <Field label="Họ và tên">
+          <input classHọ và tên={controlLớp} value={name} onChange={(event) => setHọ và tên(event.target.value)} required />
         </Field>
         <Field label="Email">
-          <input className={controlClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <input classHọ và tên={controlLớp} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         </Field>
-        <Field label="Password">
-          <input className={controlClass} type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} />
+        <Field label="Mật khẩu">
+          <input classHọ và tên={controlLớp} type="password" value={password} onChange={(event) => setMật khẩu(event.target.value)} required minLength={6} />
         </Field>
-        <Button type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create teacher account'}</Button>
+        <Button type="submit" disabled={busy}>{busy ? 'Đang tạo…' : 'Tạo tài khoản giáo viên'}</Button>
       </form>
-      <p className="mt-4 text-sm font-bold">
-        Already registered? <Link className="text-[#315fbf]" to="/login">Log in</Link>
+      <p classHọ và tên="mt-4 text-sm font-bold">
+        Đã có tài khoản? <Link classHọ và tên="text-[#315fbf]" to="/login">Đăng nhập</Link>
       </p>
     </AuthCard>
   );
@@ -109,12 +109,12 @@ export function RegisterPage() {
 
 function AuthCard({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
-    <div className="mx-auto grid min-h-screen max-w-md place-items-center px-4 py-10">
-      <div className="w-full">
-        <p className="font-display text-4xl text-[#FF914D]">Daily Duty</p>
-        <h1 className="mt-2 text-2xl font-extrabold">{title}</h1>
-        <p className="mb-4 font-bold text-slate-500">{subtitle}</p>
-        <div className="rounded-3xl bg-white p-5 shadow-sm">{children}</div>
+    <div classHọ và tên="mx-auto grid min-h-screen max-w-md place-items-center px-4 py-10">
+      <div classHọ và tên="w-full">
+        <p classHọ và tên="font-display text-4xl text-[#FF914D]">Hằng ngày Duty</p>
+        <h1 classHọ và tên="mt-2 text-2xl font-extrabold">{title}</h1>
+        <p classHọ và tên="mb-4 font-bold text-slate-500">{subtitle}</p>
+        <div classHọ và tên="rounded-3xl bg-white p-5 shadow-sm">{children}</div>
       </div>
     </div>
   );
