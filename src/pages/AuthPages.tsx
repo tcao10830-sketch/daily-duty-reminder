@@ -47,14 +47,6 @@ export function LoginPage() {
           {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
         </Button>
       </form>
-      <div className="mt-4 grid gap-2">
-        <button type="button" className="rounded-2xl bg-[#FFF3B0] px-3 py-2 text-left text-sm font-extrabold" onClick={() => void submit('giaovien@school.test', 'demo1234')}>
-          Tài khoản giáo viên mẫu · giaovien@school.test
-        </button>
-        <button type="button" className="rounded-2xl bg-[#D6E6FF] px-3 py-2 text-left text-sm font-extrabold" onClick={() => void submit('an.10a1@school.test', 'demo1234')} data-testid="demo-student">
-          Tài khoản học sinh mẫu · an.10a1@school.test
-        </button>
-      </div>
       {hasTeacher === false ? <p className="mt-4 text-sm font-bold">Bạn là giáo viên đầu tiên? <Link className="text-[#315fbf]" to="/register">Tạo tài khoản đầu tiên</Link></p> : null}
     </AuthCard>
   );
@@ -111,7 +103,7 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle: stri
   return (
     <div className="mx-auto grid min-h-screen max-w-md place-items-center px-4 py-10">
       <div className="w-full">
-        <p className="font-display text-3xl text-[#FF914D]">Daily Duty Reminder</p>
+        <p className="font-display text-3xl font-black tracking-tight text-[#FF914D]">Daily Duty Reminder</p>
         <h1 className="mt-2 text-2xl font-extrabold">{title}</h1>
         <p className="mb-4 font-bold text-slate-500">{subtitle}</p>
         <div className="auth-panel relative z-10 rounded-3xl bg-white p-5 shadow-sm">{children}</div>
