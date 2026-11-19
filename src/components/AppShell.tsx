@@ -48,7 +48,7 @@ export function AppShell() {
     <div className="app-shell mx-auto min-h-screen max-w-6xl px-4 py-5 sm:px-5">
       <header className="app-header flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="relative z-10 flex min-w-0 items-center gap-3">
-          <div className="brand-mark shrink-0"><img src="/icon.svg" alt="Daily Duty calendar" className="h-11 w-11 rounded-2xl" /></div>
+          <div className="brand-mark shrink-0"><img src="/icon.svg" alt="Biểu tượng Daily Duty Reminder" className="h-11 w-11 rounded-2xl" /></div>
           <div className="min-w-0">
             <p className="font-display text-xl leading-none text-[#FF914D] sm:text-2xl">Daily Duty Reminder</p>
             <p className="mt-1 truncate text-sm font-extrabold text-[#315fbf]">
@@ -64,11 +64,11 @@ export function AppShell() {
             {user?.role === 'teacher' ? 'Khu vực giáo viên' : 'Khu vực học sinh'}
           </div>
           <button type="button" onClick={logout} className="rounded-full border border-white bg-white/90 px-4 py-2 text-sm font-extrabold text-[#40516b] shadow-sm hover:bg-[#fff3d1]">
-            Log out
+            Đăng xuất
           </button>
         </div>
       </header>
-      <nav className="app-nav mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Main navigation">
+      <nav className="app-nav mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="Điều hướng chính">
         {links.map(([to, label, symbol]) => (
           <NavLink
             key={to}
