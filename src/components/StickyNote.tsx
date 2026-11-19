@@ -71,7 +71,7 @@ export function StickyNote({
         {wholeClass ? <span className="rounded-full bg-white/70 px-2 py-1">Cả lớp</span> : null}
       </div>
       <dl className="mt-3 space-y-1 text-sm font-bold">
-        <div>Assigned {formatLongDate(assignmentDate)}</div>
+        <div>Ngày giao {formatLongDate(assignmentDate)}</div>
         <div>
           Due {formatLongDate(deadlineDate)} · {formatTime(deadlineTime)}
         </div>
