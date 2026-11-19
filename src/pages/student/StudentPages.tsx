@@ -435,10 +435,10 @@ export function ProfilePage() {
           .catch((err: Error) => setError(err.message));
       }}
     >
-      <h1 className="text-2xl font-extrabold">Profile</h1>
+      <h1 className="text-2xl font-extrabold">Hồ sơ</h1>
       {message ? <Banner tone="ok">{message}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
-      <Field label="Name"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
+      <Field label="Họ và tên"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
       <p className="font-bold text-slate-500">{user?.email}</p>
       <Button type="submit">Lưu</Button>
     </form>
