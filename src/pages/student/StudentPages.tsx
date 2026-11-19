@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import { fileUploadPayload } from '../../lib/fileUpload';
 import { playSubmissionCelebration } from '../../lib/sounds';
-import { formatLongDate, formatStamp, formatTime } from '../../lib/format';
+import { formatLongDate, formatStamp, formatTime, translateNotificationBody, translateNotificationTitle } from '../../lib/format';
 import { useQuery } from '../../lib/query';
 import type { AssignmentCard, NotificationItem, User, WeekPoint } from '../../types';
 import { STATUS_LABEL } from '../../types';
@@ -406,8 +406,8 @@ export function StudentNotificationsPage() {
       {data?.notifications.map((item) => (
         <div key={item.id} className={`flex items-start gap-3 rounded-3xl p-4 shadow-sm ${item.read ? 'bg-white' : 'bg-[#D6E6FF]'}`}>
           <button type="button" onClick={() => void api(`/api/notifications/${item.id}/read`, { method: 'POST' }).then(() => bump())} className="min-w-0 flex-1 text-left">
-            <p className="font-extrabold">{item.title}</p>
-            <p className="font-semibold">{item.body}</p>
+            <p className="font-extrabold">{translateNotificationTitle(item.title)}</p>
+            <p className="font-semibold">{translateNotificationBody(item.body)}</p>
             <p className="text-xs font-bold text-slate-500">{formatStamp(item.createdAt)}</p>
           </button>
           <button type="button" aria-label="Xóa thông báo" onClick={() => void removeOne(item.id)} className="rounded-xl bg-white/80 px-3 py-2 text-sm font-extrabold text-red-600 shadow-sm">Xóa</button>
