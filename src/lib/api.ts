@@ -32,6 +32,6 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     setToken(null);
     if (!location.pathname.startsWith('/login')) location.assign('/login');
   }
-  if (!response.ok) throw new ApiError(response.status, data.error || 'Request failed.');
+  if (!response.ok) throw new ApiError(response.status, data.error || 'Yêu cầu không thành công.');
   return data as T;
 }
