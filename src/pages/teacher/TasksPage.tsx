@@ -36,33 +36,33 @@ export function TasksPage() {
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold">Bảng nhiệm vụ</h1>
+        <h1 className="text-2xl font-extrabold">Task board</h1>
         <div className="flex gap-2">
-          <Button tone="ghost" onClick={() => setShowCancelled((value) => !value)}>{showCancelled ? 'Ẩn nhiệm vụ đã hủy' : 'Hiện nhiệm vụ đã hủy'}</Button>
-          <Link to="/teacher/tasks/new" className="rounded-2xl bg-[#FF914D] px-4 py-2.5 font-extrabold text-white">Nhiệm vụ mới</Link>
+          <Button tone="ghost" onClick={() => setShowCancelled((value) => !value)}>{showCancelled ? 'Hide cancelled' : 'Show cancelled'}</Button>
+          <Link to="/teacher/tasks/new" className="rounded-2xl bg-[#FF914D] px-4 py-2.5 font-extrabold text-white">New task</Link>
         </div>
       </div>
       <section className="grid gap-2 rounded-3xl bg-white p-3 shadow-sm sm:grid-cols-3">
         <label className="grid gap-1 text-sm font-extrabold">Class
           <select className="rounded-xl border border-slate-200 bg-white px-3 py-2" value={classFilter} onChange={(event) => { setClassFilter(event.target.value); setStudentFilter('all'); }}>
-            <option value="all">Tất cả lớp</option>
+            <option value="all">All classes</option>
             {(classes.data?.classes ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>
         <label className="grid gap-1 text-sm font-extrabold">Student
           <select className="rounded-xl border border-slate-200 bg-white px-3 py-2" value={studentFilter} onChange={(event) => setStudentFilter(event.target.value)}>
-            <option value="all">Tất cả học sinh</option>
+            <option value="all">All students</option>
             {students.map((student) => <option key={student.id} value={student.name}>{student.name}</option>)}
           </select>
         </label>
         <label className="grid gap-1 text-sm font-extrabold">Task status
           <select className="rounded-xl border border-slate-200 bg-white px-3 py-2" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option value="all">Tất cả nhiệm vụ</option><option value="pending">Sắp đến hạn / đang chờ</option><option value="overdue">Quá hạn</option><option value="completed">Đã hoàn thành</option>
+            <option value="all">All tasks</option><option value="pending">Upcoming / pending</option><option value="overdue">Overdue</option><option value="completed">Completed</option>
           </select>
         </label>
       </section>
       {error ? <Banner tone="error">{error}</Banner> : null}
-      {tasks.length === 0 ? <Empty>Không có nhiệm vụ phù hợp với bộ lọc.</Empty> : (
+      {tasks.length === 0 ? <Empty>No tasks match these filters.</Empty> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tasks.map((task) => (
             <StickyNote
@@ -73,14 +73,14 @@ export function TasksPage() {
               description={task.description}
               className={task.className}
               wholeClass={task.assignedCount !== 1}
-              studentName={task.assignedCount === 1 ? '1 học sinh' : undefined}
+              studentName={task.assignedCount === 1 ? '1 student' : undefined}
               assignmentDate={task.assignmentDate}
               deadlineDate={task.deadlineDate}
               deadlineTime={task.deadlineTime}
               priority={task.priority}
               penalty={task.penalty}
               color={task.color}
-              footer={task.taskStatus === 'cancelled' ? 'Đã hủy' : `${task.overdueCount > 0 ? '⚠️ Overdue · ' : new Date(task.deadlineAt).getTime() - Date.now() <= 3 * 60 * 60 * 1000 && task.pendingCount > 0 ? '⏰ Due soon · ' : ''}${task.completionRate}% · ${task.completedCount}/${task.assignedCount}`}
+              footer={task.taskStatus === 'cancelled' ? 'Cancelled' : `${task.overdueCount > 0 ? '⚠️ Overdue · ' : new Date(task.deadlineAt).getTime() - Date.now() <= 3 * 60 * 60 * 1000 && task.pendingCount > 0 ? '⏰ Due soon · ' : ''}${task.completionRate}% · ${task.completedCount}/${task.assignedCount}`}
             />
           ))}
         </div>
@@ -98,7 +98,7 @@ export function NewTaskPage() {
   if (loading && !data) return <Loading />;
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-3 text-2xl font-extrabold">Giao nhiệm vụ</h1>
+      <h1 className="mb-3 text-2xl font-extrabold">Assign a task</h1>
       {error ? <div className="mb-3"><Banner tone="error">{error}</Banner></div> : null}
       <TaskForm
         mode="create"
@@ -113,7 +113,7 @@ export function NewTaskPage() {
             bump();
             navigate(`/teacher/tasks/${result.tasks[0]?.id ?? ''}`);
           } catch (err) {
-            setError(err instanceof Error ? err.message : 'Không thể giao nhiệm vụ.');
+            setError(err instanceof Error ? err.message : 'Could not assign the task.');
           } finally {
             setBusy(false);
           }
@@ -132,7 +132,7 @@ export function TaskEditPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   if ((detail.loading && !detail.data) || (classes.loading && !classes.data)) return <Loading />;
-  if (!detail.data) return <Banner tone="error">{detail.error || 'Không tìm thấy nhiệm vụ.'}</Banner>;
+  if (!detail.data) return <Banner tone="error">{detail.error || 'Task not found.'}</Banner>;
   const task = detail.data.task;
   const initial: TaskFormValues = {
     ...emptyTaskForm(task.classId),
@@ -151,7 +151,7 @@ export function TaskEditPage() {
   };
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mb-3 text-2xl font-extrabold">Chỉnh sửa nhiệm vụ</h1>
+      <h1 className="mb-3 text-2xl font-extrabold">Edit task</h1>
       {error ? <div className="mb-3"><Banner tone="error">{error}</Banner></div> : null}
       <TaskForm
         mode="edit"
@@ -166,7 +166,7 @@ export function TaskEditPage() {
             bump();
             navigate(`/teacher/tasks/${id}`);
           } catch (err) {
-            setError(err instanceof Error ? err.message : 'Không thể lưu.');
+            setError(err instanceof Error ? err.message : 'Could not save.');
           } finally {
             setBusy(false);
           }
@@ -191,7 +191,7 @@ export function TaskDetailPage() {
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
   if (loading && !data) return <Loading />;
-  if (!data) return <Banner tone="error">{error || 'Không tìm thấy nhiệm vụ.'}</Banner>;
+  if (!data) return <Banner tone="error">{error || 'Task not found.'}</Banner>;
   const rows = data.assignments.filter((row) => filter === 'all' || row.status === filter);
 
   async function act(path: string, method: string, after?: () => void) {
@@ -243,9 +243,9 @@ export function TaskDetailPage() {
         color={data.task.color}
         footer={`${data.task.completionRate}% complete`}
       />
-      {data.task.instructions ? <p className="rounded-3xl bg-white p-4 font-bold shadow-sm">Hướng dẫn: {data.task.instructions}</p> : null}
+      {data.task.instructions ? <p className="rounded-3xl bg-white p-4 font-bold shadow-sm">Instructions: {data.task.instructions}</p> : null}
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-lg font-extrabold">Tài liệu dành cho học sinh</h2>
+        <h2 className="mb-3 text-lg font-extrabold">Materials for students</h2>
         {(materials.data?.materials ?? []).length > 0 ? (
           <ul className="mb-3 grid gap-2">
             {materials.data?.materials.map((item) => (
@@ -254,24 +254,24 @@ export function TaskDetailPage() {
               </li>
             ))}
           </ul>
-        ) : <p className="mb-3 text-sm font-semibold text-slate-500">Chưa có tài liệu nào được đính kèm.</p>}
+        ) : <p className="mb-3 text-sm font-semibold text-slate-500">No materials attached yet.</p>}
         <form className="grid gap-2 sm:grid-cols-2" onSubmit={(event) => void addMaterial(event)}>
-          <input className="rounded-xl border p-2 text-sm" value={materialLabel} onChange={(event) => setMaterialLabel(event.target.value)} placeholder="Tên hiển thị (không bắt buộc)" />
+          <input className="rounded-xl border p-2 text-sm" value={materialLabel} onChange={(event) => setMaterialLabel(event.target.value)} placeholder="Display name (optional)" />
           <input className="rounded-xl border p-2 text-sm" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setMaterialFile(event.target.files?.[0] ?? null)} />
-          <input className="rounded-xl border p-2 text-sm sm:col-span-2" type="url" value={materialLink} onChange={(event) => setMaterialLink(event.target.value)} placeholder="Hoặc dán đường dẫn tài liệu https://..." />
+          <input className="rounded-xl border p-2 text-sm sm:col-span-2" type="url" value={materialLink} onChange={(event) => setMaterialLink(event.target.value)} placeholder="Or paste a reference link https://..." />
           {materialError ? <div className="sm:col-span-2"><Banner tone="error">{materialError}</Banner></div> : null}
-          <div className="sm:col-span-2"><Button type="submit" disabled={materialBusy}>{materialBusy ? 'Đang tải lên…' : 'Đính kèm tài liệu'}</Button></div>
+          <div className="sm:col-span-2"><Button type="submit" disabled={materialBusy}>{materialBusy ? 'Uploading…' : 'Attach material'}</Button></div>
         </form>
-        <p className="mt-2 text-xs font-semibold text-slate-400">PDF, Word và hình ảnh · tối đa 10 MB mỗi tệp.</p>
+        <p className="mt-2 text-xs font-semibold text-slate-400">PDF, Word and images · maximum 10 MB per file.</p>
       </section>
       <div className="flex flex-wrap gap-2">
-        <Link to={`/teacher/tasks/${id}/edit`} className="rounded-2xl bg-white px-4 py-2.5 font-extrabold shadow-sm">Chỉnh sửa</Link>
-        <Button onClick={() => void act(`/api/teacher/tasks/${id}/duplicate`, 'POST', () => setMessage('Đã tạo bản sao.'))}>Nhân bản</Button>
-        <Button tone="orange" onClick={() => void act(`/api/teacher/tasks/${id}/cancel`, 'POST', () => setMessage('Đã hủy nhiệm vụ.'))}>Hủy</Button>
+        <Link to={`/teacher/tasks/${id}/edit`} className="rounded-2xl bg-white px-4 py-2.5 font-extrabold shadow-sm">Edit</Link>
+        <Button onClick={() => void act(`/api/teacher/tasks/${id}/duplicate`, 'POST', () => setMessage('Copy created.'))}>Duplicate</Button>
+        <Button tone="orange" onClick={() => void act(`/api/teacher/tasks/${id}/cancel`, 'POST', () => setMessage('Task cancelled.'))}>Cancel</Button>
         <Button tone="red" onClick={() => {
-          if (!confirm('Bạn có chắc muốn xóa nhiệm vụ này không?')) return;
+          if (!confirm('Delete this task?')) return;
           void act(`/api/teacher/tasks/${id}`, 'DELETE', () => navigate('/teacher/tasks'));
-        }}>Xóa</Button>
+        }}>Delete</Button>
       </div>
       {message ? <Banner tone="ok">{message}</Banner> : null}
       {formError ? <Banner tone="error">{formError}</Banner> : null}
@@ -279,7 +279,7 @@ export function TaskDetailPage() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-xl font-extrabold">{data.task.completedCount}/{data.task.assignedCount} students completed · {data.task.completionRate}%</h2>
           <select className="rounded-2xl border px-3 py-2 font-bold" value={filter} onChange={(event) => setFilter(event.target.value as 'all' | CompletionStatus)}>
-            <option value="all">Tất cả</option>
+            <option value="all">All</option>
             <option value="pending">Chưa hoàn thành</option>
             <option value="on_time">Đã hoàn thành đúng hạn</option>
             <option value="late">Đã hoàn thành muộn</option>
@@ -289,7 +289,7 @@ export function TaskDetailPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="font-extrabold text-slate-500">
-              <tr><th className="p-2">Học sinh</th><th className="p-2">Trạng thái</th><th className="p-2">Thời gian hoàn thành</th><th className="p-2">Bài nộp / đánh giá</th><th className="p-2"></th></tr>
+              <tr><th className="p-2">Student</th><th className="p-2">Status</th><th className="p-2">Completion time</th><th className="p-2">Submissions / review</th><th className="p-2"></th></tr>
             </thead>
             <tbody>
               {rows.map((row) => (
@@ -299,13 +299,13 @@ export function TaskDetailPage() {
                   <td className="p-2 font-bold">{row.completedAt ? formatStamp(row.completedAt) : '—'}</td>
                   <td className="p-2"><SubmissionReview assignmentId={row.assignmentId} /></td>
                   <td className="p-2">
-                    {row.completedAt ? <Button tone="ghost" onClick={() => void act(`/api/teacher/assignments/${row.assignmentId}/reopen`, 'POST', () => setMessage('Đã mở lại nhiệm vụ.'))}>Mở lại</Button> : null}
+                    {row.completedAt ? <Button tone="ghost" onClick={() => void act(`/api/teacher/assignments/${row.assignmentId}/reopen`, 'POST', () => setMessage('Task reopened.'))}>Reopen</Button> : null}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {rows.length === 0 ? <Empty>Không có học sinh trong bộ lọc này.</Empty> : null}
+          {rows.length === 0 ? <Empty>No students in this filter.</Empty> : null}
         </div>
       </div>
     </div>
