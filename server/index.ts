@@ -10,7 +10,7 @@ import { sweepDeadlines } from './store.ts';
 import * as store from './store.ts';
 import * as cloud from './supabase.ts';
 import { getTeacherAssignment } from './access.ts';
-import { adjustStudentPencils, awardQualityPencils, resetStudentStreak, resolveStreakReview, saveEarlyRewardRules, studentRewards, teacherRewards } from './rewards.ts';
+import { adjustStudentPencils, awardQualityPencils, cleanupExpiredPencilHistory, resetStudentStreak, resolveStreakReview, saveEarlyRewardRules, studentRewards, teacherRewards } from './rewards.ts';
 
 const port = Number(process.env.PORT ?? 8787);
 const dev = process.env.DEV === '1';
@@ -212,6 +212,15 @@ if (dev || process.env.SEED_DEMO === '1') await seed();
 setInterval(() => {
   sweepDeadlines().catch((error) => console.error(error));
 }, 60_000);
+
+// Keep the student-facing pencil history to the most recent 30 days.
+// Lifetime pencil balances and reward idempotency records are stored separately.
+cleanupExpiredPencilHistory().then((count) => {
+  if (count) console.log(`Removed ${count} expired pencil-history row(s).`);
+}).catch((error) => console.error('Pencil history cleanup failed:', error));
+setInterval(() => {
+  cleanupExpiredPencilHistory().catch((error) => console.error('Pencil history cleanup failed:', error));
+}, 24 * 60 * 60 * 1000);
 
 // Run cloud-file retention cleanup on startup and periodically.
 // On Render's free plan the service may sleep; startup cleanup catches up after it wakes.
