@@ -64,18 +64,24 @@ export function AchievementsPage() {
         </ul>
         {data.earlyRules.length ? <p className="mt-2 text-xs font-bold text-slate-500">Current early-submission rules: {data.earlyRules.map((rule) => `${rule.hours}h early = +${rule.pencils}`).join(' · ')} pencils.</p> : null}
       </section>
-      <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="font-extrabold">Pencil history</h2>
-        <div className="mt-3 grid gap-2">
-          {data.recent.map((item, index) => (
-            <div key={`${item.created_at}-${index}`} className="flex items-start justify-between gap-3 rounded-xl bg-[#f7f9fc] p-3">
-              <div><p className="font-extrabold">{sourceLabel[item.source] || item.source}</p><p className="text-xs text-slate-500">{item.note} · {formatStamp(item.created_at)}</p></div>
-              <strong className={item.amount < 0 ? 'text-red-600' : 'text-green-700'}>{item.amount > 0 ? '+' : ''}{item.amount} ✏️</strong>
-            </div>
-          ))}
-          {data.recent.length === 0 ? <Empty>No pencils earned yet. Complete your first task to get started!</Empty> : null}
+      <details className="rounded-3xl bg-white p-4 shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-extrabold">
+          <span>Pencil history <span className="ml-1 rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">{data.recent.length}</span></span>
+          <span className="text-sm font-bold text-slate-500">Show / hide⌄</span>
+        </summary>
+        <p className="mt-2 text-xs font-semibold text-slate-500">History entries are automatically deleted after 30 days. Your total pencil balance is kept.</p>
+        <div className="mt-3 max-h-80 overflow-y-auto pr-1">
+          <div className="grid gap-2">
+            {data.recent.map((item, index) => (
+              <div key={`${item.created_at}-${index}`} className="flex items-start justify-between gap-3 rounded-xl bg-[#f7f9fc] p-3">
+                <div><p className="font-extrabold">{sourceLabel[item.source] || item.source}</p><p className="text-xs text-slate-500">{item.note} · {formatStamp(item.created_at)}</p></div>
+                <strong className={item.amount < 0 ? 'text-red-600' : 'text-green-700'}>{item.amount > 0 ? '+' : ''}{item.amount} ✏️</strong>
+              </div>
+            ))}
+            {data.recent.length === 0 ? <Empty>No recent pencil history. Your earned total is still kept.</Empty> : null}
+          </div>
         </div>
-      </section>
+      </details>
     </div>
   );
 }
