@@ -12,8 +12,19 @@ function ensureStreak(studentId: string) {
 }
 function addLedger(studentId: string, teacherId: string | null, assignmentId: string | null, source: LedgerSource, amount: number, note: string) {
   if (!amount) return;
-  db.prepare("INSERT OR IGNORE INTO pencil_ledger (id, student_id, teacher_id, assignment_id, source, amount, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    .run(randomUUID(), studentId, teacherId, assignmentId, source, amount, note.slice(0, 500), nowIso());
+  const createdAt = nowIso();
+  if (assignmentId && source !== 'adjustment') {
+    const claim = db.prepare('INSERT OR IGNORE INTO pencil_reward_claims (student_id, assignment_id, source, created_at) VALUES (?, ?, ?, ?)')
+      .run(studentId, assignmentId, source, createdAt);
+    if (Number(claim.changes) === 0) return;
+  }
+  const inserted = db.prepare("INSERT OR IGNORE INTO pencil_ledger (id, student_id, teacher_id, assignment_id, source, amount, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    .run(randomUUID(), studentId, teacherId, assignmentId, source, amount, note.slice(0, 500), createdAt);
+  if (Number(inserted.changes) > 0) {
+    db.prepare(`INSERT INTO student_pencil_balances (student_id, total_pencils, updated_at) VALUES (?, ?, ?)
+      ON CONFLICT(student_id) DO UPDATE SET total_pencils = total_pencils + excluded.total_pencils, updated_at = excluded.updated_at`)
+      .run(studentId, amount, createdAt);
+  }
 }
 function notify(userId: string, type: string, title: string, body: string, entityId: string) {
   db.prepare("INSERT OR IGNORE INTO notifications (id, user_id, type, title, body, entity_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
@@ -142,19 +153,29 @@ export function sweepStreaksLocked() {
   }
 }
 
+/** Remove visible pencil-history rows after 30 days while lifetime balances and reward claims remain. */
+export function cleanupExpiredPencilHistory() {
+  return withDb(() => {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const result = db.prepare('DELETE FROM pencil_ledger WHERE created_at < ?').run(cutoff);
+    return Number(result.changes);
+  });
+}
+
 export function studentRewards(studentId: string) {
   return withDb(() => {
     sweepStreaksLocked();
     ensureStreak(studentId);
     const teacher = db.prepare('SELECT c.teacher_id FROM class_members m JOIN classes c ON c.id = m.class_id WHERE m.student_id = ? LIMIT 1').get(studentId) as { teacher_id: string } | undefined;
     const streak = db.prepare('SELECT * FROM student_streaks WHERE student_id = ?').get(studentId) as { current_streak: number; status: string; grace_deadline_at: string | null; threatened_assignment_id: string | null };
-    const total = db.prepare('SELECT COALESCE(SUM(amount), 0) AS total FROM pencil_ledger WHERE student_id = ?').get(studentId) as { total: number };
-    const recent = db.prepare('SELECT source, amount, note, created_at FROM pencil_ledger WHERE student_id = ? ORDER BY created_at DESC LIMIT 20').all(studentId);
+    const total = db.prepare('SELECT COALESCE(total_pencils, 0) AS total FROM student_pencil_balances WHERE student_id = ?').get(studentId) as { total: number } | undefined;
+    const historyCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const recent = db.prepare('SELECT source, amount, note, created_at FROM pencil_ledger WHERE student_id = ? AND created_at >= ? ORDER BY created_at DESC').all(studentId, historyCutoff);
     const warning = streak.status === 'threatened' && streak.grace_deadline_at
       ? db.prepare('SELECT t.title FROM task_assignments a JOIN tasks t ON t.id = a.task_id WHERE a.id = ?').get(streak.threatened_assignment_id) as { title: string } | undefined
       : undefined;
     return {
-      totalPencils: total.total,
+      totalPencils: total?.total ?? 0,
       equivalentStars: total.total * 2,
       currentStreak: streak.current_streak,
       streakStatus: streak.status,
@@ -171,7 +192,7 @@ export function teacherRewards(teacherId: string) {
     sweepStreaksLocked();
     const students = db.prepare(`
       SELECT u.id, u.name, c.name AS class_name,
-        COALESCE((SELECT SUM(l.amount) FROM pencil_ledger l WHERE l.student_id = u.id), 0) AS total_pencils,
+        COALESCE((SELECT b.total_pencils FROM student_pencil_balances b WHERE b.student_id = u.id), 0) AS total_pencils,
         COALESCE(s.current_streak, 0) AS current_streak,
         COALESCE(s.status, 'active') AS streak_status
       FROM users u JOIN class_members m ON m.student_id = u.id
