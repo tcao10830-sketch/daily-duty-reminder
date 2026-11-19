@@ -298,7 +298,7 @@ export function Học sinhNhiệm vụPage() {
             {latest.review ? (
               <div classHọ và tên={`mt-2 rounded-xl p-3 font-bold ${latest.review.status === 'approved' ? 'bg-[#D8F6E4] text-green-800' : 'bg-[#FFE0C2] text-orange-900'}`}>
                 {latest.review.status === 'approved' ? 'Đã duyệt' : 'Please revise and submit again'}
-                {latest.review.feedback ? <p classHọ và tên="mt-1 font-semibold">Teacher feedback: {latest.review.feedback}</p> : null}
+                {latest.review.feedback ? <p classHọ và tên="mt-1 font-semibold">Nhận xét của giáo viên: {latest.review.feedback}</p> : null}
               </div>
             ) : <p classHọ và tên="mt-2 text-sm font-bold text-[#315fc4]">Đang chờ giáo viên xem bài.</p>}
           </div>
