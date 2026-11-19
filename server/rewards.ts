@@ -109,7 +109,7 @@ export function flagStreakRevisionLocked(teacherId: string, assignmentId: string
   `).get(assignmentId, teacherId) as { student_id: string; streak_number: number; title: string; student_name: string } | undefined;
   if (!row) return;
   db.prepare('UPDATE streak_events SET review_required = 1, decision = NULL WHERE assignment_id = ?').run(assignmentId);
-  notify(teacherId, 'streak_revision_review', 'Streak decision needed', `${row.student_name} · ${row.title} · streak #${row.streak_number}. Decide whether this streak should continue.`, assignmentId);
+  notify(teacherId, 'streak_revision_review', 'Cần quyết định về chuỗi thành tích', `${row.student_name} · ${row.title} · nhiệm vụ thứ ${row.streak_number} trong chuỗi. Hãy quyết định có tiếp tục duy trì chuỗi hay không.`, assignmentId);
 }
 
 /** Called from the periodic deadline sweep, inside withDb. */
@@ -124,7 +124,7 @@ export function sweepStreaksLocked() {
     if (streak.status === 'threatened' && streak.grace_deadline_at && now > new Date(streak.grace_deadline_at).getTime()) {
       db.prepare("UPDATE student_streaks SET current_streak = 0, status = 'broken', grace_deadline_at = NULL, threatened_assignment_id = NULL, updated_at = ? WHERE student_id = ?")
         .run(nowIso(), streak.student_id);
-      notify(streak.student_id, 'streak_lost', 'Your streak has ended', 'The 24-hour recovery window has passed. Your next completed task starts a new streak.', streak.threatened_assignment_id || 'streak');
+      notify(streak.student_id, 'streak_lost', 'Chuỗi thành tích của bạn đã kết thúc', 'Thời gian gia hạn 24 giờ đã kết thúc. Nhiệm vụ tiếp theo bạn hoàn thành sẽ bắt đầu một chuỗi mới.', streak.threatened_assignment_id || 'streak');
       continue;
     }
     if (streak.status === 'threatened') continue;
@@ -143,12 +143,12 @@ export function sweepStreaksLocked() {
     if (now > grace) {
       db.prepare("UPDATE student_streaks SET current_streak = 0, status = 'broken', grace_deadline_at = NULL, threatened_assignment_id = NULL, updated_at = ? WHERE student_id = ?")
         .run(nowIso(), streak.student_id);
-      notify(streak.student_id, 'streak_lost', 'Your streak has ended', 'A task remained overdue beyond the 24-hour recovery window. Your next completed task starts a new streak.', overdue.id);
+      notify(streak.student_id, 'streak_lost', 'Chuỗi thành tích của bạn đã kết thúc', 'Một nhiệm vụ vẫn quá hạn sau thời gian gia hạn 24 giờ. Nhiệm vụ tiếp theo bạn hoàn thành sẽ bắt đầu một chuỗi mới.', overdue.id);
     } else {
       db.prepare("UPDATE student_streaks SET status = 'threatened', grace_deadline_at = ?, threatened_assignment_id = ?, updated_at = ? WHERE student_id = ?")
         .run(new Date(grace).toISOString(), overdue.id, nowIso(), streak.student_id);
-      notify(streak.student_id, 'streak_threatened', 'Your streak is at risk', `“${overdue.title}” is overdue. Complete it within 24 hours to keep your streak.`, overdue.id);
-      notify(overdue.teacher_id, 'student_streak_threatened', 'A student streak is at risk', `A student has an overdue task: “${overdue.title}”.`, overdue.id);
+      notify(streak.student_id, 'streak_threatened', 'Chuỗi thành tích của bạn đang có nguy cơ bị gián đoạn', `Nhiệm vụ “${overdue.title}” đã quá hạn. Hãy hoàn thành trong vòng 24 giờ để duy trì chuỗi.`, overdue.id);
+      notify(overdue.teacher_id, 'student_streak_threatened', 'Chuỗi thành tích của học sinh có nguy cơ bị gián đoạn', `Một học sinh có nhiệm vụ đã quá hạn: “${overdue.title}”.`, overdue.id);
     }
   }
 }
@@ -216,17 +216,17 @@ export function teacherRewards(teacherId: string) {
 }
 
 export function saveEarlyRewardRules(teacherId: string, raw: unknown) {
-  if (!Array.isArray(raw)) throw new HttpError(400, 'Reward rules must be a list.');
+  if (!Array.isArray(raw)) throw new HttpError(400, 'Danh sách quy tắc thưởng không hợp lệ.');
   const rules = raw.map((value) => {
     const item = value as Record<string, unknown>;
     const hours = Number(item.hours);
     const pencils = Number(item.pencils);
     if (!Number.isInteger(hours) || hours < 1 || hours > 720 || !Number.isInteger(pencils) || pencils < 1 || pencils > 100) {
-      throw new HttpError(400, 'Each rule needs whole hours (1–720) and pencils (1–100).');
+      throw new HttpError(400, 'Mỗi quy tắc cần số giờ nguyên (1–720) và số bút chì (1–100).');
     }
     return { hours, pencils };
   });
-  if (new Set(rules.map((item) => item.hours)).size !== rules.length) throw new HttpError(400, 'Each early-submission threshold must be unique.');
+  if (new Set(rules.map((item) => item.hours)).size !== rules.length) throw new HttpError(400, 'Mỗi mốc thời gian nộp sớm phải khác nhau.');
   rules.sort((a, b) => b.hours - a.hours);
   return withDb(() => {
     db.prepare(`
@@ -239,14 +239,14 @@ export function saveEarlyRewardRules(teacherId: string, raw: unknown) {
 
 export function awardQualityPencils(teacherId: string, assignmentId: string, rawAmount: unknown) {
   const amount = Number(rawAmount ?? 0);
-  if (!Number.isInteger(amount) || amount < 0 || amount > 100) throw new HttpError(400, 'Quality reward must be between 0 and 100 pencils.');
+  if (!Number.isInteger(amount) || amount < 0 || amount > 100) throw new HttpError(400, 'Thưởng chất lượng phải từ 0 đến 100 bút chì.');
   return withDb(() => {
     const row = db.prepare(`
       SELECT a.student_id, t.title FROM task_assignments a JOIN tasks t ON t.id = a.task_id
       JOIN task_completions c ON c.assignment_id = a.id
       WHERE a.id = ? AND t.teacher_id = ?
     `).get(assignmentId, teacherId) as { student_id: string; title: string } | undefined;
-    if (!row) throw new HttpError(404, 'Approved assignment not found.');
+    if (!row) throw new HttpError(404, 'Không tìm thấy nhiệm vụ đã được duyệt.');
     if (amount) addLedger(row.student_id, teacherId, assignmentId, 'quality', amount, `Quality reward: ${row.title}`);
     return { ok: true, awarded: amount };
   });
@@ -255,8 +255,8 @@ export function awardQualityPencils(teacherId: string, assignmentId: string, raw
 export function adjustStudentPencils(teacherId: string, studentId: string, rawAmount: unknown, rawNote: unknown) {
   const amount = Number(rawAmount);
   const note = String(rawNote ?? '').trim();
-  if (!Number.isInteger(amount) || amount === 0 || amount < -1000 || amount > 1000) throw new HttpError(400, 'Adjustment must be a non-zero whole number from -1000 to 1000.');
-  if (!note) throw new HttpError(400, 'Please explain this adjustment.');
+  if (!Number.isInteger(amount) || amount === 0 || amount < -1000 || amount > 1000) throw new HttpError(400, 'Mức điều chỉnh phải là số nguyên khác 0, từ -1000 đến 1000.');
+  if (!note) throw new HttpError(400, 'Vui lòng nhập lý do điều chỉnh.');
   return withDb(() => {
     const owned = db.prepare('SELECT u.id FROM users u JOIN class_members m ON m.student_id = u.id JOIN classes c ON c.id = m.class_id WHERE u.id = ? AND c.teacher_id = ?').get(studentId, teacherId);
     if (!owned) throw new HttpError(404, 'Student not found.');
@@ -271,14 +271,14 @@ export function resetStudentStreak(teacherId: string, studentId: string) {
     if (!owned) throw new HttpError(404, 'Student not found.');
     ensureStreak(studentId);
     db.prepare("UPDATE student_streaks SET current_streak = 0, status = 'broken', grace_deadline_at = NULL, threatened_assignment_id = NULL, updated_at = ? WHERE student_id = ?").run(nowIso(), studentId);
-    notify(studentId, 'streak_teacher_reset', 'Your streak was reset', 'Your teacher reset your current task streak.', `teacher-reset:${nowIso()}`);
+    notify(studentId, 'streak_teacher_reset', 'Chuỗi thành tích của bạn đã được đặt lại', 'Giáo viên đã đặt lại chuỗi nhiệm vụ hiện tại của bạn.', `teacher-reset:${nowIso()}`);
     return { ok: true };
   });
 }
 
 export function resolveStreakReview(teacherId: string, assignmentId: string, rawDecision: unknown) {
   const decision = String(rawDecision);
-  if (decision !== 'keep' && decision !== 'break') throw new HttpError(400, 'Choose keep or break.');
+  if (decision !== 'keep' && decision !== 'break') throw new HttpError(400, 'Hãy chọn tiếp tục hoặc đặt lại chuỗi.');
   return withDb(() => {
     const row = db.prepare(`
       SELECT e.student_id, e.streak_bonus, e.streak_number, t.title
@@ -286,15 +286,15 @@ export function resolveStreakReview(teacherId: string, assignmentId: string, raw
       JOIN tasks t ON t.id = a.task_id
       WHERE e.assignment_id = ? AND t.teacher_id = ? AND e.review_required = 1 AND e.decision IS NULL
     `).get(assignmentId, teacherId) as { student_id: string; streak_bonus: number; streak_number: number; title: string } | undefined;
-    if (!row) throw new HttpError(404, 'Streak review not found.');
+    if (!row) throw new HttpError(404, 'Không tìm thấy yêu cầu xem xét chuỗi.');
     db.prepare('UPDATE streak_events SET review_required = 0, decision = ? WHERE assignment_id = ?').run(decision, assignmentId);
     if (decision === 'break') {
       ensureStreak(row.student_id);
       db.prepare("UPDATE student_streaks SET current_streak = 0, status = 'broken', grace_deadline_at = NULL, threatened_assignment_id = NULL, updated_at = ? WHERE student_id = ?").run(nowIso(), row.student_id);
       if (row.streak_bonus) addLedger(row.student_id, teacherId, assignmentId, 'streak_reversal', -row.streak_bonus, 'Teacher revoked streak reward');
-      notify(row.student_id, 'streak_teacher_decision', 'Streak reset by teacher', `Your teacher decided that the streak for “${row.title}” will not continue.`, assignmentId);
+      notify(row.student_id, 'streak_teacher_decision', 'Giáo viên đã đặt lại chuỗi', `Giáo viên quyết định không tiếp tục duy trì chuỗi cho nhiệm vụ “${row.title}”.`, assignmentId);
     } else {
-      notify(row.student_id, 'streak_teacher_decision', 'Streak approved to continue', `Your teacher allowed your streak to continue after revising “${row.title}”.`, assignmentId);
+      notify(row.student_id, 'streak_teacher_decision', 'Chuỗi thành tích được tiếp tục', `Giáo viên cho phép bạn tiếp tục duy trì chuỗi sau khi chỉnh sửa bài “${row.title}”.`, assignmentId);
     }
     return { ok: true, decision };
   });
