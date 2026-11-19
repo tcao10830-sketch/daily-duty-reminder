@@ -35,8 +35,8 @@ export function DashboardPage() {
         </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Classes" value={data.stats.classes} tint="#FFF3B0" />
-        <StatCard label="Students" value={data.stats.students} tint="#D6E6FF" />
+        <StatCard label="Lớp học" value={data.stats.classes} tint="#FFF3B0" />
+        <StatCard label="Học sinh" value={data.stats.students} tint="#D6E6FF" />
         <StatCard label="Giao hôm nay" value={data.stats.assignedToday} tint="#FFE0C2" />
         <StatCard label="Đã hoàn thành" value={data.stats.completed} tint="#D8F6E4" />
         <StatCard label="Đang chờ" value={data.stats.pending} tint="#E6D9FF" />
