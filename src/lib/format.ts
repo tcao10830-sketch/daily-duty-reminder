@@ -90,18 +90,20 @@ export function translateNotificationTitle(title: string): string {
 
 export function translateNotificationBody(body: string): string {
   const patterns: [RegExp, (match: RegExpMatchArray) => string][] = [
-    [/^(.+) is due (.+) at (.+)\\.$/, (m) => `${m[1]} có hạn nộp vào ${m[2]} lúc ${m[3]}.`],
-    [/^(.+) is now due (.+) at (.+)\\.$/, (m) => `Hạn nộp của ${m[1]} đã được đổi thành ${m[2]} lúc ${m[3]}.`],
-    [/^(.+) was updated\\.$/, (m) => `Nhiệm vụ ${m[1]} đã được cập nhật.`],
-    [/^(.+) was cancelled\\.$/, (m) => `Nhiệm vụ ${m[1]} đã bị hủy.`],
-    [/^(.+) was deleted\\.$/, (m) => `Nhiệm vụ ${m[1]} đã bị xóa.`],
-    [/^(.+) completed “(.+)”\\. Class progress: (.+)\\.$/, (m) => `${m[1]} đã hoàn thành “${m[2]}”. Tiến độ lớp: ${m[3]}.`],
-    [/^(.+) was reopened by your teacher\\.$/, (m) => `Giáo viên đã mở lại nhiệm vụ “${m[1]}”.`],
-    [/^Your teacher asked you to revise “(.+)”\\.$/, (m) => `Giáo viên yêu cầu bạn chỉnh sửa bài “${m[1]}”.`],
-    [/^(.+) is past the deadline\\. Penalty: (.+)\\.$/, (m) => `Nhiệm vụ “${m[1]}” đã quá hạn. Hình phạt: ${m[2]}.`],
-    [/^(.+) has not completed “(.+)”\\.$/, (m) => `${m[1]} chưa hoàn thành “${m[2]}”.`],
-    [/^“(.+)” is overdue\\. Complete it within 24 hours to keep your streak\\.$/, (m) => `Nhiệm vụ “${m[1]}” đã quá hạn. Hãy hoàn thành trong vòng 24 giờ để duy trì chuỗi.`],
-    [/^A student has an overdue task: “(.+)”\\.$/, (m) => `Một học sinh có nhiệm vụ đã quá hạn: “${m[1]}”.`],
+    [/^(.+) is due (.+) at (.+)\.$/, (m) => `${m[1]} có hạn nộp vào ${m[2]} lúc ${m[3]}.`],
+    [/^(.+) is now due (.+) at (.+)\.$/, (m) => `Hạn nộp của ${m[1]} đã được đổi thành ${m[2]} lúc ${m[3]}.`],
+    [/^(.+) was updated\.$/, (m) => `Nhiệm vụ ${m[1]} đã được cập nhật.`],
+    [/^(.+) was cancelled\.$/, (m) => `Nhiệm vụ ${m[1]} đã bị hủy.`],
+    [/^(.+) was deleted\.$/, (m) => `Nhiệm vụ ${m[1]} đã bị xóa.`],
+    [/^(.+) completed “(.+)”\. Class progress: (.+)\.$/, (m) => `${m[1]} đã hoàn thành “${m[2]}”. Tiến độ lớp: ${m[3]}.`],
+    [/^(.+) was reopened by your teacher\.$/, (m) => `Giáo viên đã mở lại nhiệm vụ “${m[1]}”.`],
+    [/^Your teacher asked you to revise “(.+)”\.$/, (m) => `Giáo viên yêu cầu bạn chỉnh sửa bài “${m[1]}”.`],
+    [/^(.+) is past the deadline\. Penalty: (.+)\.$/, (m) => `Nhiệm vụ “${m[1]}” đã quá hạn. Hình phạt: ${m[2]}.`],
+    [/^(.+) has not completed “(.+)”\.$/, (m) => `${m[1]} chưa hoàn thành “${m[2]}”.`],
+    [/^“(.+)” is overdue\. Complete it within 24 hours to keep your streak\.$/, (m) => `Nhiệm vụ “${m[1]}” đã quá hạn. Hãy hoàn thành trong vòng 24 giờ để duy trì chuỗi.`],
+    [/^A student has an overdue task: “(.+)”\.$/, (m) => `Một học sinh có nhiệm vụ đã quá hạn: “${m[1]}”.`],
+    [/^Your teacher decided that the streak for “(.+)” will not continue\.$/, (m) => `Giáo viên quyết định không tiếp tục duy trì chuỗi cho nhiệm vụ “${m[1]}”.`],
+    [/^Your teacher allowed your streak to continue after revising “(.+)”\.$/, (m) => `Giáo viên cho phép bạn tiếp tục duy trì chuỗi sau khi chỉnh sửa bài “${m[1]}”.`],
   ];
   for (const [pattern, render] of patterns) {
     const match = body.match(pattern);
@@ -111,7 +113,6 @@ export function translateNotificationBody(body: string): string {
     'The 24-hour recovery window has passed. Your next completed task starts a new streak.': 'Thời gian gia hạn 24 giờ đã kết thúc. Nhiệm vụ tiếp theo bạn hoàn thành sẽ bắt đầu một chuỗi mới.',
     'A task remained overdue beyond the 24-hour recovery window. Your next completed task starts a new streak.': 'Một nhiệm vụ vẫn quá hạn sau thời gian gia hạn 24 giờ. Nhiệm vụ tiếp theo bạn hoàn thành sẽ bắt đầu một chuỗi mới.',
     'Your teacher reset your current task streak.': 'Giáo viên đã đặt lại chuỗi nhiệm vụ hiện tại của bạn.',
-    'Your teacher decided that the streak for “' + '' + '” will not continue.': body,
   };
   return exact[body] ?? body;
 }
