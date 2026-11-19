@@ -138,7 +138,7 @@ export function ClassPage() {
       >
         <Field label="Tên học sinh"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
         <Field label="Email"><input className={controlClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
-        <Field label="Password"><input className={controlClass} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} /></Field>
+        <Field label="Mật khẩu"><input className={controlClass} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} /></Field>
         <div className="self-end"><Button type="submit">Thêm học sinh</Button></div>
       </form>
       <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
@@ -191,7 +191,7 @@ export function ClassPage() {
             });
           }}
         >
-          <Field label="Name"><input name="name" className={controlClass} defaultValue={editing.name} required /></Field>
+          <Field label="Họ và tên"><input name="name" className={controlClass} defaultValue={editing.name} required /></Field>
           <Field label="Email"><input name="email" className={controlClass} defaultValue={editing.email} required /></Field>
           <Field label="Mật khẩu mới (không bắt buộc)"><input name="password" className={controlClass} placeholder="Để trống nếu không muốn đổi" /></Field>
           <div className="flex items-end gap-2">
