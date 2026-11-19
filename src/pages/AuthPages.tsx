@@ -114,7 +114,7 @@ function AuthCard({ title, subtitle, children }: { title: string; subtitle: stri
         <p className="font-display text-3xl text-[#FF914D]">Daily Duty Reminder</p>
         <h1 className="mt-2 text-2xl font-extrabold">{title}</h1>
         <p className="mb-4 font-bold text-slate-500">{subtitle}</p>
-        <div className="rounded-3xl bg-white p-5 shadow-sm">{children}</div>
+        <div className="auth-panel relative z-10 rounded-3xl bg-white p-5 shadow-sm">{children}</div>
       </div>
     </div>
   );
