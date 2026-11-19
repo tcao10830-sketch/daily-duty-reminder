@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { NoteColor, Mức độ ưu tiên, Recurrence } from '../types';
-import { Button, Field, controlLớp } from './ui';
-import { hcmHôm nay } from '../lib/format';
+import type { NoteColor, Priority, Recurrence } from '../types';
+import { Button, Field, controlClass } from './ui';
+import { hcmToday } from '../lib/format';
 
-export type Nhiệm vụFormValues = {
+export type TaskFormValues = {
   title: string;
   description: string;
   instructions: string;
@@ -12,7 +12,7 @@ export type Nhiệm vụFormValues = {
   assignmentDate: string;
   deadlineDate: string;
   deadlineTime: string;
-  priority: Mức độ ưu tiên;
+  priority: Priority;
   penalty: string;
   color: NoteColor;
   recurrence: Recurrence;
@@ -32,17 +32,17 @@ const swatch: Record<NoteColor, string> = {
   purple: '#E6D9FF',
 };
 const days = [
-  [1, 'T2'],
-  [2, 'T3'],
-  [3, 'T4'],
-  [4, 'T5'],
-  [5, 'T6'],
-  [6, 'T7'],
-  [0, 'CN'],
+  [1, 'Mon'],
+  [2, 'Tue'],
+  [3, 'Wed'],
+  [4, 'Thu'],
+  [5, 'Fri'],
+  [6, 'Sat'],
+  [0, 'Sun'],
 ];
 
-export function emptyNhiệm vụForm(classId = ''): Nhiệm vụFormValues {
-  const today = hcmHôm nay();
+export function emptyTaskForm(classId = ''): TaskFormValues {
+  const today = hcmToday();
   return {
     title: '',
     description: '',
@@ -63,7 +63,7 @@ export function emptyNhiệm vụForm(classId = ''): Nhiệm vụFormValues {
   };
 }
 
-export function Nhiệm vụForm({
+export function TaskForm({
   mode,
   classes,
   initial,
@@ -71,46 +71,46 @@ export function Nhiệm vụForm({
   onSubmit,
 }: {
   mode: 'create' | 'edit';
-  classes: { id: string; name: string; học sinh: { id: string; name: string }[] }[];
-  initial: Nhiệm vụFormValues;
+  classes: { id: string; name: string; students: { id: string; name: string }[] }[];
+  initial: TaskFormValues;
   busy: boolean;
-  onSubmit: (values: Nhiệm vụFormValues) => Promise<void>;
+  onSubmit: (values: TaskFormValues) => Promise<void>;
 }) {
   const [values, setValues] = useState(initial);
   const [extraDate, setExtraDate] = useState('');
-  const học sinh = classes.find((item) => item.id === values.classId)?.học sinh ?? [];
+  const students = classes.find((item) => item.id === values.classId)?.students ?? [];
 
-  function set<K extends keyof Nhiệm vụFormValues>(key: K, value: Nhiệm vụFormValues[K]) {
+  function set<K extends keyof TaskFormValues>(key: K, value: TaskFormValues[K]) {
     setValues((current) => ({ ...current, [key]: value }));
   }
 
   return (
     <form
-      classHọ và tên="grid gap-4 rounded-3xl bg-white p-5 shadow-sm"
+      className="grid gap-4 rounded-3xl bg-white p-5 shadow-sm"
       onSubmit={(event) => {
         event.preventDefault();
         void onSubmit(values);
       }}
     >
-      <Field label="Tên nhiệm vụ">
-        <input classHọ và tên={controlLớp} value={values.title} onChange={(event) => set('title', event.target.value)} required />
+      <Field label="Task title">
+        <input className={controlClass} value={values.title} onChange={(event) => set('title', event.target.value)} required />
       </Field>
-      <Field label="Mô tả">
-        <textarea classHọ và tên={controlLớp} rows={3} value={values.description} onChange={(event) => set('description', event.target.value)} />
+      <Field label="Description">
+        <textarea className={controlClass} rows={3} value={values.description} onChange={(event) => set('description', event.target.value)} />
       </Field>
-      <Field label="Hướng dẫn bổ sung">
-        <textarea classHọ và tên={controlLớp} rows={2} value={values.instructions} onChange={(event) => set('instructions', event.target.value)} />
+      <Field label="Additional instructions">
+        <textarea className={controlClass} rows={2} value={values.instructions} onChange={(event) => set('instructions', event.target.value)} />
       </Field>
-      <div classHọ và tên="grid gap-4 sm:grid-cols-2">
-        <Field label="Lớp được giao">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Target class">
           <select
-            classHọ và tên={controlLớp}
+            className={controlClass}
             value={values.classId}
             onChange={(event) => setValues((current) => ({ ...current, classId: event.target.value, studentId: '' }))}
             required
             disabled={mode === 'edit'}
           >
-            <option value="">Chọn lớp</option>
+            <option value="">Choose a class</option>
             {classes.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -118,10 +118,10 @@ export function Nhiệm vụForm({
             ))}
           </select>
         </Field>
-        <Field label="Học sinh được giao (không bắt buộc)">
-          <select classHọ và tên={controlLớp} value={values.studentId} onChange={(event) => set('studentId', event.target.value)} disabled={mode === 'edit'}>
-            <option value="">Cả lớp</option>
-            {học sinh.map((student) => (
+        <Field label="Target student (optional)">
+          <select className={controlClass} value={values.studentId} onChange={(event) => set('studentId', event.target.value)} disabled={mode === 'edit'}>
+            <option value="">Whole class</option>
+            {students.map((student) => (
               <option key={student.id} value={student.id}>
                 {student.name}
               </option>
@@ -129,58 +129,58 @@ export function Nhiệm vụForm({
           </select>
         </Field>
       </div>
-      <div classHọ và tên="grid gap-4 sm:grid-cols-3">
-        <Field label="Ngày giao">
-          <input classHọ và tên={controlLớp} type="date" value={values.assignmentDate} onChange={(event) => set('assignmentDate', event.target.value)} required />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field label="Assignment date">
+          <input className={controlClass} type="date" value={values.assignmentDate} onChange={(event) => set('assignmentDate', event.target.value)} required />
         </Field>
-        <Field label="Ngày đến hạn">
-          <input classHọ và tên={controlLớp} type="date" value={values.deadlineDate} onChange={(event) => set('deadlineDate', event.target.value)} required />
+        <Field label="Deadline date">
+          <input className={controlClass} type="date" value={values.deadlineDate} onChange={(event) => set('deadlineDate', event.target.value)} required />
         </Field>
-        <Field label="Giờ đến hạn">
-          <input classHọ và tên={controlLớp} type="time" value={values.deadlineTime} onChange={(event) => set('deadlineTime', event.target.value)} required />
+        <Field label="Deadline time">
+          <input className={controlClass} type="time" value={values.deadlineTime} onChange={(event) => set('deadlineTime', event.target.value)} required />
         </Field>
       </div>
-      <div classHọ và tên="grid gap-4 sm:grid-cols-2">
-        <Field label="Mức độ ưu tiên">
-          <select classHọ và tên={controlLớp} value={values.priority} onChange={(event) => set('priority', event.target.value as Mức độ ưu tiên)}>
-            <option value="low">Thấp</option>
-            <option value="medium">Trung bình</option>
-            <option value="high">Cao</option>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Priority">
+          <select className={controlClass} value={values.priority} onChange={(event) => set('priority', event.target.value as Priority)}>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
           </select>
         </Field>
-        <Field label="Hình phạt khi quá hạn">
-          <input classHọ và tên={controlLớp} value={values.penalty} onChange={(event) => set('penalty', event.target.value)} placeholder="Giáo viên nhập hình phạt" />
+        <Field label="Penalty for missing the deadline">
+          <input className={controlClass} value={values.penalty} onChange={(event) => set('penalty', event.target.value)} placeholder="The teacher writes the penalty" />
         </Field>
       </div>
       <div>
-        <p classHọ và tên="mb-2 text-sm font-extrabold">Màu ghi chú</p>
-        <div classHọ và tên="flex flex-wrap gap-2">
+        <p className="mb-2 text-sm font-extrabold">Note color</p>
+        <div className="flex flex-wrap gap-2">
           {colors.map((color) => (
             <button
               key={color}
               type="button"
               aria-label={color}
               onClick={() => set('color', color)}
-              classHọ và tên={`h-9 w-9 rounded-full border-2 ${values.color === color ? 'border-[#24324a]' : 'border-white'}`}
+              className={`h-9 w-9 rounded-full border-2 ${values.color === color ? 'border-[#24324a]' : 'border-white'}`}
               style={{ background: swatch[color] }}
             />
           ))}
         </div>
       </div>
       {mode === 'create' ? (
-        <div classHọ và tên="grid gap-3">
-          <Field label="Lịch lặp lại">
-            <select classHọ và tên={controlLớp} value={values.recurrence} onChange={(event) => set('recurrence', event.target.value as Recurrence)}>
-              <option value="once">Một lần</option>
-              <option value="daily">Hằng ngày</option>
-              <option value="weekly">Hằng tuần</option>
-              <option value="custom">Ngày tùy chọn</option>
+        <div className="grid gap-3">
+          <Field label="Schedule">
+            <select className={controlClass} value={values.recurrence} onChange={(event) => set('recurrence', event.target.value as Recurrence)}>
+              <option value="once">One-time</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="custom">Custom dates</option>
             </select>
           </Field>
           {values.recurrence === 'daily' || values.recurrence === 'weekly' ? (
-            <Field label="Tạo trước bao nhiêu ngày">
+            <Field label="How many days ahead">
               <input
-                classHọ và tên={controlLớp}
+                className={controlClass}
                 type="number"
                 min={1}
                 max={31}
@@ -190,7 +190,7 @@ export function Nhiệm vụForm({
             </Field>
           ) : null}
           {values.recurrence === 'weekly' ? (
-            <div classHọ và tên="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               {days.map(([day, label]) => {
                 const selected = values.weekdays.includes(Number(day));
                 return (
@@ -203,7 +203,7 @@ export function Nhiệm vụForm({
                         selected ? values.weekdays.filter((item) => item !== day) : [...values.weekdays, Number(day)],
                       )
                     }
-                    classHọ và tên={`rounded-full px-3 py-1.5 text-sm font-extrabold ${selected ? 'bg-[#4F87FF] text-white' : 'bg-[#eef4ff]'}`}
+                    className={`rounded-full px-3 py-1.5 text-sm font-extrabold ${selected ? 'bg-[#4F87FF] text-white' : 'bg-[#eef4ff]'}`}
                   >
                     {label}
                   </button>
@@ -213,8 +213,8 @@ export function Nhiệm vụForm({
           ) : null}
           {values.recurrence === 'custom' ? (
             <div>
-              <div classHọ và tên="flex gap-2">
-                <input classHọ và tên={controlLớp} type="date" value={extraDate} onChange={(event) => setExtraDate(event.target.value)} />
+              <div className="flex gap-2">
+                <input className={controlClass} type="date" value={extraDate} onChange={(event) => setExtraDate(event.target.value)} />
                 <Button
                   onClick={() => {
                     if (!extraDate || values.customDates.includes(extraDate)) return;
@@ -222,28 +222,28 @@ export function Nhiệm vụForm({
                     setExtraDate('');
                   }}
                 >
-                  Thêm ngày
+                  Add date
                 </Button>
               </div>
-              <div classHọ và tên="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 {values.customDates.map((date) => (
-                  <button key={date} type="button" classHọ và tên="rounded-full bg-[#FFF3B0] px-3 py-1 text-sm font-extrabold" onClick={() => set('customDates', values.customDates.filter((item) => item !== date))}>
+                  <button key={date} type="button" className="rounded-full bg-[#FFF3B0] px-3 py-1 text-sm font-extrabold" onClick={() => set('customDates', values.customDates.filter((item) => item !== date))}>
                     {date} ×
                   </button>
                 ))}
               </div>
             </div>
           ) : null}
-          <p classHọ và tên="text-sm font-bold text-slate-500">Hằng ngày and weekly tasks create one note per matching day. The same day is never added twice.</p>
+          <p className="text-sm font-bold text-slate-500">Daily and weekly tasks create one note per matching day. The same day is never added twice.</p>
         </div>
       ) : (
-        <label classHọ và tên="flex items-center gap-2 font-bold">
+        <label className="flex items-center gap-2 font-bold">
           <input type="checkbox" checked={values.applyToSeries} onChange={(event) => set('applyToSeries', event.target.checked)} />
-          Áp dụng tên, hướng dẫn, hình phạt, màu sắc và giờ đến hạn cho các nhiệm vụ tiếp theo trong chuỗi này
+          Apply title, instructions, penalty, color, and deadline time to later tasks in this series
         </label>
       )}
       <Button type="submit" disabled={busy} testId="save-task">
-        {busy ? 'Đang lưu…' : mode === 'create' ? 'Giao nhiệm vụ' : 'Lưu changes'}
+        {busy ? 'Saving…' : mode === 'create' ? 'Assign task' : 'Save changes'}
       </Button>
     </form>
   );
