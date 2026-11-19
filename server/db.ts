@@ -149,6 +149,23 @@ CREATE TABLE IF NOT EXISTS pencil_ledger (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pencil_ledger_once
   ON pencil_ledger(student_id, assignment_id, source) WHERE assignment_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_pencil_ledger_student ON pencil_ledger(student_id, created_at);
+CREATE TABLE IF NOT EXISTS student_pencil_balances (
+  student_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  total_pencils INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS pencil_reward_claims (
+  student_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  assignment_id TEXT NOT NULL,
+  source TEXT NOT NULL CHECK (source IN ('early', 'quality', 'streak', 'streak_reversal')),
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (student_id, assignment_id, source)
+);
+INSERT OR IGNORE INTO student_pencil_balances (student_id, total_pencils, updated_at)
+  SELECT student_id, SUM(amount), CURRENT_TIMESTAMP FROM pencil_ledger GROUP BY student_id;
+INSERT OR IGNORE INTO pencil_reward_claims (student_id, assignment_id, source, created_at)
+  SELECT student_id, assignment_id, source, created_at FROM pencil_ledger
+  WHERE assignment_id IS NOT NULL AND source <> 'adjustment';
 
 CREATE TABLE IF NOT EXISTS streak_events (
   assignment_id TEXT PRIMARY KEY REFERENCES task_assignments(id) ON DELETE CASCADE,
