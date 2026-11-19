@@ -24,7 +24,7 @@ const sourceLabel: Record<string, string> = {
 export function AchievementsPage() {
   const { data, error, loading } = useQuery<RewardData>('/api/student/rewards');
   if (loading && !data) return <Loading />;
-  if (!data) return <Banner tone="error">{error || 'Could not load achievements.'}</Banner>;
+  if (!data) return <Banner tone="error">{error || 'Không thể tải thành tích.'}</Banner>;
   return (
     <div className="grid gap-4">
       <div>
@@ -33,9 +33,9 @@ export function AchievementsPage() {
       </div>
       {data.streakStatus === 'threatened' ? (
         <section className="rounded-3xl border-2 border-red-300 bg-red-50 p-4 text-red-800 shadow-sm">
-          <p className="font-extrabold">⚠ Your streak is at risk!</p>
+          <p className="font-extrabold">⚠ Chuỗi thành tích của bạn đang có nguy cơ bị gián đoạn!</p>
           <p className="mt-1 text-sm font-bold">Hãy hoàn thành “{data.threatenedTaskTitle || 'nhiệm vụ đang quá hạn'}” trong thời gian gia hạn 24 giờ để duy trì chuỗi nhé.</p>
-          {data.graceDeadlineAt ? <p className="mt-2 text-sm font-extrabold">Recovery deadline: {formatStamp(data.graceDeadlineAt)}</p> : null}
+          {data.graceDeadlineAt ? <p className="mt-2 text-sm font-extrabold">Hạn cuối để duy trì chuỗi: {formatStamp(data.graceDeadlineAt)}</p> : null}
         </section>
       ) : null}
       <section className="grid gap-3 sm:grid-cols-2">
@@ -52,7 +52,7 @@ export function AchievementsPage() {
       </section>
       <section className="rounded-3xl bg-white p-4 shadow-sm">
         <h2 className="font-extrabold">Chuỗi nhiệm vụ liên tiếp hiện tại</h2>
-        <p className="mt-2 text-3xl font-black">{data.currentStreak} tasks 🔥</p>
+        <p className="mt-2 text-3xl font-black">{data.currentStreak} nhiệm vụ 🔥</p>
         <p className="mt-1 text-sm font-semibold text-slate-500">{data.streakStatus === 'threatened' ? 'Có nguy cơ gián đoạn — hãy hoàn thành trong thời gian gia hạn.' : data.streakStatus === 'broken' ? 'Chuỗi trước đã kết thúc. Nhiệm vụ tiếp theo sẽ bắt đầu chuỗi mới.' : 'Mỗi nhiệm vụ hoàn thành sẽ được tính vào chuỗi.'}</p>
       </section>
       <section className="rounded-3xl bg-white p-4 shadow-sm">
@@ -60,9 +60,9 @@ export function AchievementsPage() {
         <ul className="mt-2 grid gap-2 text-sm font-semibold text-slate-600">
           <li>• Nộp bài sớm: nhận số bút chì do giáo viên thiết lập.</li>
           <li>• Chất lượng bài làm: giáo viên có thể thưởng thêm bút chì sau khi xem bài.</li>
-          <li>• Task streak: tasks 1–5 earn no streak bonus; 6–20 +1; 21–35 +2; 36–45 +3; 46–50 +4; 51+ +5 pencils per task.</li>
+          <li>• Chuỗi nhiệm vụ: nhiệm vụ 1–5 không có thưởng thêm; 6–20 được +1; 21–35 được +2; 36–45 được +3; 46–50 được +4; từ nhiệm vụ 51 trở đi được +5 bút chì mỗi nhiệm vụ.</li>
         </ul>
-        {data.earlyRules.length ? <p className="mt-2 text-xs font-bold text-slate-500">Current early-submission rules: {data.earlyRules.map((rule) => `sớm ${rule.hours} giờ = +${rule.pencils}`).join(' · ')} pencils.</p> : null}
+        {data.earlyRules.length ? <p className="mt-2 text-xs font-bold text-slate-500">Quy tắc thưởng nộp sớm hiện tại: {data.earlyRules.map((rule) => `sớm ${rule.hours} giờ = +${rule.pencils}`).join(' · ')} bút chì.</p> : null}
       </section>
       <details className="rounded-3xl bg-white p-4 shadow-sm">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-extrabold">
