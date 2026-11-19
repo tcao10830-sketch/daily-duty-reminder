@@ -37,7 +37,7 @@ export function StudentHomePage() {
           <h1 className="mt-3 font-display text-3xl leading-tight text-[#34445e] sm:text-4xl">Xin chào, {user?.name}!</h1>
           <p className="mt-2 max-w-lg text-sm font-bold leading-relaxed text-[#5f6d7f] sm:text-base">Các nhiệm vụ hôm nay của bạn nằm bên dưới. Cứ hoàn thành từng bước một nhé, bạn làm được mà!</p>
           <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1.5 text-xs font-extrabold text-[#4d8c6d]">
-            <span className="text-[#FF914D]">✦</span> Keep growing, keep glowing
+            <span className="text-[#FF914D]">✦</span> Luôn tiến bộ và tỏa sáng mỗi ngày
           </div>
         </div>
         <div className="relative z-10 shrink-0">
@@ -46,13 +46,13 @@ export function StudentHomePage() {
       </section>
       {rewards.data?.streakStatus === 'threatened' ? (
         <section className="rounded-3xl border-2 border-red-300 bg-red-50 p-4 text-red-800 shadow-sm">
-          <p className="font-extrabold">⚠ Your streak is at risk!</p>
+          <p className="font-extrabold">⚠ Chuỗi thành tích của bạn đang có nguy cơ bị gián đoạn!</p>
           <p className="mt-1 text-sm font-bold">Hãy hoàn thành “{rewards.data.threatenedTaskTitle || 'nhiệm vụ đang quá hạn'}” trong vòng 24 giờ để duy trì chuỗi nhé.</p>
-          {rewards.data.graceDeadlineAt ? <p className="mt-1 text-xs font-extrabold">Recovery deadline: {formatStamp(rewards.data.graceDeadlineAt)}</p> : null}
+          {rewards.data.graceDeadlineAt ? <p className="mt-1 text-xs font-extrabold">Hạn cuối để duy trì chuỗi: {formatStamp(rewards.data.graceDeadlineAt)}</p> : null}
         </section>
       ) : null}
       <Link to="/student/achievements" className="flex flex-wrap items-center justify-between gap-2 rounded-3xl bg-[#FFF3B0] p-4 shadow-sm">
-        <div><p className="font-extrabold text-[#805b19]">Thành tích của bạn</p><p className="text-sm font-bold text-[#805b19]">{rewards.data?.currentStreak ?? 0} task streak</p></div>
+        <div><p className="font-extrabold text-[#805b19]">Thành tích của bạn</p><p className="text-sm font-bold text-[#805b19]">{rewards.data?.currentStreak ?? 0} nhiệm vụ liên tiếp</p></div>
         <strong className="text-2xl text-[#34445e]">{rewards.data?.totalPencils ?? 0} ✏️</strong>
       </Link>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -162,7 +162,7 @@ export function MyTasksPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {notes.map((note) => (
             <div key={note.assignmentId} className="relative">
-              {note.status === 'overdue' ? <span className="absolute -top-2 -right-2 z-10 rounded-full bg-red-600 px-3 py-1 text-sm font-black text-white shadow-md" aria-label="Overdue warning">⚠ QUÁ HẠN</span> : null}
+              {note.status === 'overdue' ? <span className="absolute -top-2 -right-2 z-10 rounded-full bg-red-600 px-3 py-1 text-sm font-black text-white shadow-md" aria-label="Cảnh báo quá hạn">⚠ QUÁ HẠN</span> : null}
               {note.status === 'pending' && new Date(note.deadlineAt).getTime() - now <= 48 * 60 * 60 * 1000 ? <span className="absolute -top-2 -right-2 z-10 rounded-full bg-amber-400 px-3 py-1 text-sm font-black text-[#513b12] shadow-md">⏰ SẮP ĐẾN HẠN</span> : null}
               <StickyNote
                 id={note.assignmentId}
