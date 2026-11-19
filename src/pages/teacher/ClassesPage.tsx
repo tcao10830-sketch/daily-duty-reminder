@@ -18,10 +18,10 @@ export function ClassesPage() {
     try {
       await api('/api/teacher/classes', { method: 'POST', body: JSON.stringify({ name }) });
       setName('');
-      setMessage('Class created.');
+      setMessage('Đã tạo lớp học.');
       bump();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not create the class.');
+      setFormError(err instanceof Error ? err.message : 'Không thể tạo lớp học.');
     }
   }
 
@@ -36,16 +36,16 @@ export function ClassesPage() {
         }}
       >
         <div className="min-w-56 flex-1">
-          <Field label="New class">
+          <Field label="Lớp học mới">
             <input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} placeholder="10A1" required />
           </Field>
         </div>
-        <Button type="submit">Create class</Button>
+        <Button type="submit">Tạo lớp</Button>
       </form>
       {message ? <Banner tone="ok">{message}</Banner> : null}
       {formError || error ? <Banner tone="error">{formError || error}</Banner> : null}
       <div className="grid gap-3 sm:grid-cols-2">
-        {data?.classes.length === 0 ? <Empty>No classes yet.</Empty> : null}
+        {data?.classes.length === 0 ? <Empty>Chưa có lớp học nào.</Empty> : null}
         {data?.classes.map((item) => (
           <Link key={item.id} to={`/teacher/classes/${item.id}`} className="rounded-3xl bg-white p-4 shadow-sm">
             <h2 className="text-2xl font-extrabold">{item.name}</h2>
@@ -102,15 +102,15 @@ export function ClassPage() {
       <div className="rounded-3xl bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-56 flex-1">
-            <Field label="Class name">
+            <Field label="Tên lớp">
               <input className={controlClass} value={shownName} onChange={(event) => setClassName(event.target.value)} />
             </Field>
           </div>
-          <Button onClick={() => void run(async () => { await api(`/api/teacher/classes/${id}`, { method: 'PATCH', body: JSON.stringify({ name: shownName }) }); setMessage('Class renamed.'); })}>Rename</Button>
+          <Button onClick={() => void run(async () => { await api(`/api/teacher/classes/${id}`, { method: 'PATCH', body: JSON.stringify({ name: shownName }) }); setMessage('Đã đổi tên lớp.'); })}>Đổi tên</Button>
           <Button
             tone="red"
             onClick={() => {
-              if (!confirm(`Delete ${data.class.name}? Students in this class will lose access.`)) return;
+              if (!confirm(`Xóa lớp ${data.class.name}? Học sinh trong lớp sẽ không còn quyền truy cập.`)) return;
               void run(async () => {
                 await api(`/api/teacher/classes/${id}`, { method: 'DELETE' });
                 navigate('/teacher/classes');
@@ -132,22 +132,22 @@ export function ClassPage() {
             await api(`/api/teacher/classes/${id}/students`, { method: 'POST', body: JSON.stringify({ name, email, password }) });
             setName('');
             setEmail('');
-            setMessage('Student added. They can log in with that email.');
+            setMessage('Đã thêm học sinh. Các em có thể đăng nhập bằng email này.');
           });
         }}
       >
-        <Field label="Student name"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
+        <Field label="Tên học sinh"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} required /></Field>
         <Field label="Email"><input className={controlClass} type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
         <Field label="Password"><input className={controlClass} value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} /></Field>
-        <div className="self-end"><Button type="submit">Add student</Button></div>
+        <div className="self-end"><Button type="submit">Thêm học sinh</Button></div>
       </form>
       <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="bg-[#f7fbff] font-extrabold">
             <tr>
-              <th className="p-3">Student</th>
-              <th className="p-3">Status mix</th>
-              <th className="p-3">Rate</th>
+              <th className="p-3">Học sinh</th>
+              <th className="p-3">Tình trạng nhiệm vụ</th>
+              <th className="p-3">Tỷ lệ</th>
               <th className="p-3"></th>
             </tr>
           </thead>
@@ -158,22 +158,22 @@ export function ClassPage() {
                   <Link className="font-extrabold text-[#315fbf]" to={`/teacher/progress/${student.id}`}>{student.name}</Link>
                   <div className="text-slate-500">{student.email}</div>
                 </td>
-                <td className="p-3 font-bold">{student.completed} done · {student.pending} pending · {student.overdue} overdue</td>
+                <td className="p-3 font-bold">{student.completed} đã xong · {student.pending} đang chờ · {student.overdue} quá hạn</td>
                 <td className="p-3 font-extrabold">{student.completionRate}%</td>
                 <td className="p-3">
                   <div className="flex gap-2">
-                    <Button tone="ghost" onClick={() => setEditing(student)}>Edit</Button>
+                    <Button tone="ghost" onClick={() => setEditing(student)}>Chỉnh sửa</Button>
                     <Button tone="red" onClick={() => {
-                      if (!confirm(`Remove ${student.name}?`)) return;
-                      void run(async () => { await api(`/api/teacher/students/${student.id}`, { method: 'DELETE' }); setMessage('Student removed.'); });
-                    }}>Remove</Button>
+                      if (!confirm(`Xóa học sinh ${student.name}?`)) return;
+                      void run(async () => { await api(`/api/teacher/students/${student.id}`, { method: 'DELETE' }); setMessage('Đã xóa học sinh.'); });
+                    }}>Gỡ bỏ</Button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {data.students.length === 0 ? <Empty>Add a student to this class.</Empty> : null}
+        {data.students.length === 0 ? <Empty>Thêm học sinh vào lớp này.</Empty> : null}
       </div>
       {editing ? (
         <form
@@ -187,16 +187,16 @@ export function ClassPage() {
                 body: JSON.stringify({ name: form.get('name'), email: form.get('email'), password: form.get('password') }),
               });
               setEditing(null);
-              setMessage('Student updated.');
+              setMessage('Đã cập nhật học sinh.');
             });
           }}
         >
           <Field label="Name"><input name="name" className={controlClass} defaultValue={editing.name} required /></Field>
           <Field label="Email"><input name="email" className={controlClass} defaultValue={editing.email} required /></Field>
-          <Field label="New password (optional)"><input name="password" className={controlClass} placeholder="Leave blank to keep" /></Field>
+          <Field label="Mật khẩu mới (không bắt buộc)"><input name="password" className={controlClass} placeholder="Để trống nếu không muốn đổi" /></Field>
           <div className="flex items-end gap-2">
-            <Button type="submit">Save</Button>
-            <Button tone="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button type="submit">Lưu</Button>
+            <Button tone="ghost" onClick={() => setEditing(null)}>Hủy</Button>
           </div>
         </form>
       ) : null}
