@@ -21,7 +21,7 @@ export function LoginPage() {
       const user = await login(nextEmail, nextPassword);
       navigate(user.role === 'teacher' ? '/teacher' : '/student');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed.');
+      setError(err instanceof Error ? err.message : 'Đăng nhập không thành công.');
     } finally {
       setBusy(false);
     }
@@ -49,13 +49,13 @@ export function LoginPage() {
       </form>
       <div className="mt-4 grid gap-2">
         <button type="button" className="rounded-2xl bg-[#FFF3B0] px-3 py-2 text-left text-sm font-extrabold" onClick={() => void submit('giaovien@school.test', 'demo1234')}>
-          Demo teacher · giaovien@school.test
+          Tài khoản giáo viên mẫu · giaovien@school.test
         </button>
         <button type="button" className="rounded-2xl bg-[#D6E6FF] px-3 py-2 text-left text-sm font-extrabold" onClick={() => void submit('an.10a1@school.test', 'demo1234')} data-testid="demo-student">
-          Demo student · an.10a1@school.test
+          Tài khoản học sinh mẫu · an.10a1@school.test
         </button>
       </div>
-      {hasTeacher === false ? <p className="mt-4 text-sm font-bold">First teacher? <Link className="text-[#315fbf]" to="/register">Tạo tài khoản đầu tiên</Link></p> : null}
+      {hasTeacher === false ? <p className="mt-4 text-sm font-bold">Bạn là giáo viên đầu tiên? <Link className="text-[#315fbf]" to="/register">Tạo tài khoản đầu tiên</Link></p> : null}
     </AuthCard>
   );
 }
@@ -101,7 +101,7 @@ export function RegisterPage() {
         <Button type="submit" disabled={busy}>{busy ? 'Đang tạo…' : 'Tạo tài khoản giáo viên'}</Button>
       </form>
       <p className="mt-4 text-sm font-bold">
-        Already registered? <Link className="text-[#315fbf]" to="/login">Đăng nhập</Link>
+        Đã có tài khoản? <Link className="text-[#315fbf]" to="/login">Đăng nhập</Link>
       </p>
     </AuthCard>
   );
