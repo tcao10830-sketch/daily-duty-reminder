@@ -31,14 +31,14 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     size += buffer.length;
-    if (size > 15_000_000) throw new HttpError(413, 'Request is too large. Each uploaded file must be 10 MB or smaller.');
+    if (size > 15_000_000) throw new HttpError(413, 'Yêu cầu quá lớn. Mỗi tệp tải lên không được vượt quá 10 MB.');
     chunks.push(buffer);
   }
   if (!chunks.length) return {};
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
   } catch {
-    throw new HttpError(400, 'Request body must be JSON.');
+    throw new HttpError(400, 'Dữ liệu gửi lên phải có định dạng JSON.');
   }
 }
 
@@ -64,8 +64,8 @@ async function currentUser(req: IncomingMessage) {
 }
 
 function requireUser(user: store.PublicUser | null, role?: store.Role): store.PublicUser {
-  if (!user) throw new HttpError(401, 'Please log in.');
-  if (role && user.role !== role) throw new HttpError(403, 'You cannot open that page.');
+  if (!user) throw new HttpError(401, 'Vui lòng đăng nhập.');
+  if (role && user.role !== role) throw new HttpError(403, 'Bạn không có quyền truy cập trang này.');
   return user;
 }
 
@@ -152,7 +152,7 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       const submission = await cloud.getSubmission(params.id);
       const assignment = await getTeacherAssignment(teacher.id, submission.assignment_id);
       const status = String(body.status);
-      if (status !== 'approved' && status !== 'revision_requested') throw new HttpError(400, 'Choose approve or request changes.');
+      if (status !== 'approved' && status !== 'revision_requested') throw new HttpError(400, 'Hãy chọn duyệt bài hoặc yêu cầu chỉnh sửa.');
       const review = await cloud.reviewSubmission(params.id, teacher.id, status, String(body.feedback || ''));
       if (status === 'approved') {
         await store.completeAssignmentAt(assignment.studentId, assignment.assignmentId, submission.created_at);
@@ -238,7 +238,7 @@ const server = createServer(async (req, res) => {
       const payload = readToken(url.searchParams.get('token') ?? '', jwtSecret);
       const account = payload ? await store.getUser(payload.sub) : null;
       if (!account) {
-        send(res, 401, { error: 'Please log in.' });
+        send(res, 401, { error: 'Vui lòng đăng nhập.' });
         return;
       }
       res.writeHead(200, {
@@ -263,7 +263,7 @@ const server = createServer(async (req, res) => {
         serveStatic(req, res, url.pathname);
         return;
       }
-      send(res, 404, { error: 'Not found.' });
+      send(res, 404, { error: 'Không tìm thấy nội dung yêu cầu.' });
       return;
     }
 
@@ -271,7 +271,7 @@ const server = createServer(async (req, res) => {
     const user = await currentUser(req);
     const result = await dispatch(req.method ?? 'GET', url.pathname, body, user);
     if (result == null) {
-      send(res, 404, { error: 'Not found.' });
+      send(res, 404, { error: 'Không tìm thấy nội dung yêu cầu.' });
       return;
     }
     send(res, 200, result);
@@ -281,7 +281,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     console.error(error);
-    if (!res.headersSent) send(res, 500, { error: 'Something went wrong.' });
+    if (!res.headersSent) send(res, 500, { error: 'Đã xảy ra lỗi. Vui lòng thử lại.' });
   }
 });
 
