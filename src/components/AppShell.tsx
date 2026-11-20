@@ -14,6 +14,7 @@ const teacherLinks = [
   ['/teacher/tasks', 'Nhiệm vụ', '✓'],
   ['/teacher/calendar', 'Lịch', '▣'],
   ['/teacher/progress', 'Tiến độ học sinh', '↗'],
+  ['/teacher/reports', 'Báo cáo phụ huynh', '▤'],
   ['/teacher/rewards', 'Phần thưởng', '✏️'],
   ['/teacher/notifications', 'Thông báo', '♧'],
   ['/teacher/settings', 'Cài đặt', '⚙'],
