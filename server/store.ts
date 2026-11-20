@@ -14,6 +14,7 @@ import {
   type Recurrence,
 } from './time.ts';
 import { emitMany } from './events.ts';
+import { sendPushNotification } from './push.ts';
 import { flagStreakRevisionLocked, recordSubmissionRewardsLocked, sweepStreaksLocked } from './rewards.ts';
 
 export type Role = 'teacher' | 'student';
@@ -174,6 +175,7 @@ function insertNotification(userId: string, type: string, title: string, body: s
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     ).run(id(), userId, type, title, body, entityId, nowIso());
     events.push({ userId, event: { type: 'notification' } });
+    void sendPushNotification(userId, type, title, body, entityId).catch((error) => console.error('Push delivery failed:', error));
   } catch (error) {
     if (String(error).includes('UNIQUE')) return;
     throw error;
@@ -813,6 +815,25 @@ export function reopenAssignment(teacherId: string, assignmentId: string) {
   });
 }
 
+
+export function notifySubmissionReview(studentId: string, assignmentId: string, approved: boolean) {
+  return withDb(() => {
+    const row = db.prepare(`SELECT t.title FROM task_assignments a JOIN tasks t ON t.id = a.task_id
+      WHERE a.id = ? AND a.student_id = ?`).get(assignmentId, studentId) as { title: string } | undefined;
+    if (!row) return;
+    const events: LiveEvent[] = [];
+    insertNotification(
+      studentId,
+      approved ? 'task_approved' : 'task_revision_requested',
+      approved ? 'Phản hồi tốt từ nhà vua' : 'Phản hồi xấu từ nhà vua',
+      approved ? 'Bài làm của bạn đã được giáo viên duyệt.' : `Giáo viên yêu cầu chỉnh sửa bài “${row.title}”.`,
+      `${assignmentId}:${approved ? 'approved' : 'revision'}:${nowIso()}`,
+      events,
+    );
+    publish(events);
+  });
+}
+
 export function markAssignmentSubmitted(studentId: string, assignmentId: string, submittedAt: string) {
   return withDb(() => {
     const row = db.prepare(`${assignmentSelect} WHERE a.id = ? AND a.student_id = ? AND t.status = 'active'`).get(assignmentId, studentId) as AssignmentRow | undefined;
@@ -1020,8 +1041,10 @@ function sweepLocked(): void {
     if (now > deadline) {
       insertNotification(row.student_id, 'task_overdue', 'Nhiệm vụ đã quá hạn', `Nhiệm vụ “${row.title}” đã quá hạn. Hình phạt: ${row.penalty || 'Không có'}.`, row.assignment_id, events);
       insertNotification(row.teacher_id, 'student_overdue', 'Nhiệm vụ của học sinh đã quá hạn', `${row.student_name} chưa hoàn thành “${row.title}”.`, row.assignment_id, events);
-    } else if (deadline - now <= 3 * 60 * 60 * 1000) {
-      insertNotification(row.student_id, 'deadline_soon', 'Sắp đến hạn nộp', `Nhiệm vụ “${row.title}” có hạn nộp vào ${row.deadline_date} lúc ${row.deadline_time}.`, row.assignment_id, events);
+    } else if (deadline - now <= 60 * 60 * 1000) {
+      insertNotification(row.student_id, 'deadline_1h', 'Nóng rồi đó 🔥', `Nhiệm vụ “${row.title}” còn 1 giờ nữa là đến hạn.`, row.assignment_id, events);
+    } else if (deadline - now <= 24 * 60 * 60 * 1000) {
+      insertNotification(row.student_id, 'deadline_24h', 'Đã mất dần kiên nhẫn!!!', `Nhiệm vụ “${row.title}” còn 24 giờ nữa là đến hạn.`, row.assignment_id, events);
     }
   }
   publish(events);
