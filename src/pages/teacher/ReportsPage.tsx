@@ -117,6 +117,22 @@ export function ReportsPage() {
           .report-footer { position:static !important; flex:none !important; margin-top:auto !important; }
           .report-sheet .mascot-art { filter:drop-shadow(0 5px 3px rgba(50,65,90,.12)); }
         }
+        /* School Journal visual refresh */
+        .report-preview { padding:24px 12px 40px; border-radius:30px; background:linear-gradient(135deg,#f2f7ff 0%,#fff9eb 52%,#f8f4ff 100%); }
+        .report-student-group { display:grid; justify-items:center; gap:18px; }
+        .report-sheet { color:#293d5e; max-width:794px; min-height:1123px; padding:42px 46px; border:1px solid #e4ebf7; border-radius:26px; background:linear-gradient(145deg,#fff 0%,#fffdf8 100%); box-shadow:0 14px 38px rgba(55,78,120,.10); }
+        .report-sheet header { border-color:#e8edf6 !important; }
+        .report-sheet .report-stat { border:1px solid #e7edf7; border-radius:17px; background:#fff; box-shadow:0 3px 10px rgba(60,85,130,.035); }
+        .report-sheet .report-stat strong { font-size:29px; letter-spacing:-.04em; }
+        .report-sheet section { border-radius:21px !important; }
+        .report-sheet .report-section { padding:19px 20px; border:1px solid #e4eaf4; background:#fff; box-shadow:0 4px 14px rgba(56,79,119,.035); }
+        .report-sheet .report-section h3 { display:flex; align-items:center; gap:9px; font-size:16px; letter-spacing:-.01em; }
+        .report-sheet .report-section h3:before { content:""; width:8px; height:8px; border-radius:50%; background:#82a8f5; flex:none; }
+        .report-sheet .report-note { min-height:64px; border-radius:13px; background:#f7f9fd; color:#43536d; }
+        .report-sheet .report-footer { border:1px solid #e1eafb; border-radius:17px; background:#f1f6ff; }
+        .report-edit { width:100%; max-width:794px; border:1px solid #e5ebf5; }
+        @media (max-width:640px) { .report-preview { padding:12px 0 24px; } .report-sheet { min-height:0; padding:24px 20px; border-radius:20px; } }
+        @media print { .report-preview { padding:0 !important; background:#fff !important; } .report-student-group { display:block !important; } .report-sheet { max-width:none !important; border-radius:0 !important; } }
       `}</style>
 
       <section className="report-tools rounded-3xl bg-white p-4 shadow-sm sm:p-5">
