@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { Mascot } from '../../components/Mascot';
 import { Banner, Button, Empty, Field, Loading, controlClass } from '../../components/ui';
 import { api } from '../../lib/api';
@@ -211,7 +211,7 @@ export function ReportsPage() {
                   <section className="mt-4 rounded-3xl border border-[#dce7fb] bg-[#f7faff] p-4">
                     <h3 className="mb-3 font-extrabold">Kết quả theo trạng thái</h3>
                     <div className="flex flex-wrap items-center gap-5">
-                      <div className="report-donut" style={{ '--rate': `${ratio * 3.6}deg` } as React.CSSProperties}><strong>{ratio}%</strong></div>
+                      <div className="report-donut" style={{ '--rate': `${ratio * 3.6}deg` } as CSSProperties}><strong>{ratio}%</strong></div>
                       <div className="grid flex-1 gap-2 text-sm font-bold">
                         <p><span className="mr-2 inline-block h-3 w-3 rounded-full bg-[#4f87ff]"/>Đúng hạn <b className="float-right">{stats.onTime}</b></p>
                         <p><span className="mr-2 inline-block h-3 w-3 rounded-full bg-[#ffad4d]"/>Hoàn thành muộn <b className="float-right">{stats.late}</b></p>
