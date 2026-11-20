@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { db, withDb } from './db.ts';
 import { HttpError } from './errors.ts';
 import { deadlineMs } from './time.ts';
+import { sendPushNotification } from './push.ts';
 
 type EarlyRule = { hours: number; pencils: number };
 type LedgerSource = 'early' | 'quality' | 'streak' | 'adjustment' | 'streak_reversal';
@@ -27,8 +28,11 @@ function addLedger(studentId: string, teacherId: string | null, assignmentId: st
   }
 }
 function notify(userId: string, type: string, title: string, body: string, entityId: string) {
-  db.prepare("INSERT OR IGNORE INTO notifications (id, user_id, type, title, body, entity_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
+  const result = db.prepare("INSERT OR IGNORE INTO notifications (id, user_id, type, title, body, entity_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
     .run(randomUUID(), userId, type, title, body, entityId, nowIso());
+  if (Number(result.changes) > 0) {
+    void sendPushNotification(userId, type, title, body, entityId).catch((error) => console.error('Push delivery failed:', error));
+  }
 }
 function streakBonus(n: number) {
   if (n >= 51) return 5;
