@@ -2,6 +2,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { extname, join, normalize, relative, sep } from 'node:path';
 import { jwtSecret } from './db.ts';
+import { getPushPublicKey, savePushSubscription, removePushSubscription } from './push.ts';
 import { readToken, signToken } from './auth.ts';
 import { HttpError } from './errors.ts';
 import { subscribe } from './events.ts';
@@ -157,12 +158,17 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       if (status === 'approved') {
         await store.completeAssignmentAt(assignment.studentId, assignment.assignmentId, submission.created_at);
         await awardQualityPencils(teacher.id, assignment.assignmentId, body.qualityPencils ?? 0);
+        await store.notifySubmissionReview(assignment.studentId, assignment.assignmentId, true);
       } else {
         await store.requestAssignmentRevision(teacher.id, assignment.assignmentId, review.review.created_at || new Date().toISOString());
+        await store.notifySubmissionReview(assignment.studentId, assignment.assignmentId, false);
       }
       return { review };
     } },
     { method: 'POST', pattern: '/api/student/assignments/:id/start', run: async (params) => ({ assignment: await store.startAssignment(requireUser(user, 'student').id, params.id) }) },
+    { method: 'GET', pattern: '/api/push/public-key', run: async () => getPushPublicKey() },
+    { method: 'POST', pattern: '/api/push/subscribe', run: async () => savePushSubscription(requireUser(user).id, body.subscription) },
+    { method: 'POST', pattern: '/api/push/unsubscribe', run: async () => removePushSubscription(requireUser(user).id, body.endpoint) },
     { method: 'GET', pattern: '/api/notifications', run: async () => store.listNotifications(requireUser(user).id) },
     { method: 'POST', pattern: '/api/notifications/:id/read', run: async (params) => store.markRead(requireUser(user).id, params.id) },
     { method: 'POST', pattern: '/api/notifications/read-all', run: async () => store.markAllRead(requireUser(user).id) },
