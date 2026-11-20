@@ -217,7 +217,7 @@ export function ReportsPage() {
                       <h2 className="font-display text-3xl font-black leading-tight text-[#263b60]">Báo cáo<br/>tiến độ học tập</h2>
                       <p className="mt-2 inline-flex rounded-full bg-[#fff0c4] px-4 py-2 text-sm font-extrabold"> {periodLabel(report.period.from, report.period.to)} </p>
                     </div>
-                    <Mascot size={148} className="drop-shadow-md" />
+                    <Mascot size={148} pose="checklist" className="drop-shadow-md" />
                   </div>
                   <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#dce7fb] bg-[#f7faff] p-4">
                     <div><p className="text-lg font-black">{report.student.name}</p><p className="text-sm font-semibold text-slate-500">Lớp {report.className}</p></div>
