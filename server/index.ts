@@ -161,7 +161,6 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
         await store.notifySubmissionReview(assignment.studentId, assignment.assignmentId, true);
       } else {
         await store.requestAssignmentRevision(teacher.id, assignment.assignmentId, review.review.created_at || new Date().toISOString());
-        await store.notifySubmissionReview(assignment.studentId, assignment.assignmentId, false);
       }
       return { review };
     } },
