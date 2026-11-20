@@ -41,7 +41,7 @@ export function StudentHomePage() {
           </div>
         </div>
         <div className="relative z-10 shrink-0">
-          <Mascot size={132} />
+          <Mascot size={132} pose="encourage" />
         </div>
       </section>
       {rewards.data?.streakStatus === 'threatened' ? (
