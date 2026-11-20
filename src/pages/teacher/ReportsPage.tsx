@@ -82,7 +82,7 @@ export function ReportsPage() {
     <div className="grid gap-4">
       <style>{`
         .report-preview { color: #263b60; font-family: "Be Vietnam Pro", "Segoe UI", sans-serif; }
-        .report-sheet { box-sizing: border-box; width: 100%; max-width: 820px; min-height: 1060px; margin: 0 auto 22px; padding: 34px; overflow: hidden; position: relative; border: 1px solid #e4ecfa; border-radius: 28px; background: radial-gradient(circle at 95% 5%, #e5efff 0, transparent 22%), linear-gradient(155deg,#fff 0%,#fffdf7 100%); box-shadow: 0 8px 28px rgba(50,80,130,.08); }
+        .report-sheet { box-sizing: border-box; width: 100%; max-width: 820px; min-height: 1080px; margin: 0 auto 22px; padding: 38px; overflow: hidden; position: relative; border: 1px solid #e4ecfa; border-radius: 28px; background: radial-gradient(circle at 92% 7%, #e5efff 0, transparent 25%), radial-gradient(circle at 4% 94%, #fff0d5 0, transparent 20%), linear-gradient(155deg,#fff 0%,#fffdf7 100%); box-shadow: 0 8px 28px rgba(50,80,130,.08); }
         .report-chip { display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:9px 16px; background:#fff0c4; color:#344b70; font-weight:800; }
         .report-stat { border-radius:20px; padding:16px 10px; text-align:center; background:#fff; border:1px solid #e7edfa; }
         .report-stat strong { display:block; font-size:30px; line-height:1.15; color:#263b60; }
@@ -93,23 +93,26 @@ export function ReportsPage() {
         .report-table { width:100%; border-collapse:collapse; font-size:11px; }
         .report-table th { background:#eaf1ff; text-align:left; color:#34445e; padding:9px 8px; }
         .report-table td { border-bottom:1px solid #e8edf5; padding:8px; vertical-align:top; }
-        .report-footer { position:absolute; bottom:25px; left:34px; right:34px; border-radius:20px; background:#edf4ff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .report-footer { position:absolute; bottom:30px; left:38px; right:38px; border-radius:20px; background:#edf4ff; padding:13px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
         .report-donut { width:118px; height:118px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(#4f87ff var(--rate), #ffb65e 0); position:relative; flex:none; }
         .report-donut:before { content:""; position:absolute; inset:13px; border-radius:50%; background:white; }
         .report-donut strong { position:relative; font-size:23px; }
         .report-edit { display:grid; gap:9px; border-radius:22px; background:#fff; padding:16px; box-shadow:0 2px 12px rgba(50,80,130,.06); }
         .report-edit label { display:grid; gap:5px; font-size:13px; font-weight:800; color:#34445e; }
         .report-edit textarea { width:100%; min-height:72px; resize:vertical; border:1px solid #d7e4f5; border-radius:13px; padding:10px; font:inherit; font-size:13px; outline-color:#4f87ff; }
-        @page { size: A4; margin: 9mm; }
+        @page { size: A4 portrait; margin: 0; }
         @media print {
-          body { background:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+          html, body, #root { width:210mm !important; margin:0 !important; padding:0 !important; background:#fff !important; }
+          body { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
           body * { visibility:hidden !important; }
           .report-print-area, .report-print-area * { visibility:visible !important; }
           .report-tools, .report-edit, .report-screen-only { display:none !important; }
-          .report-print-area { position:absolute; left:0; top:0; width:100%; }
-          .report-sheet { width:100%; max-width:none; min-height:277mm; height:277mm; margin:0; padding:8mm; border:0; border-radius:0; box-shadow:none; break-after:page; page-break-after:always; }
-          .report-sheet:last-child { break-after:auto; page-break-after:auto; }
-          .report-footer { left:8mm; right:8mm; bottom:7mm; }
+          .report-print-area { display:block !important; position:absolute !important; inset:0 auto auto 0 !important; width:210mm !important; margin:0 !important; padding:0 !important; }
+          .report-print-area > div { display:contents !important; }
+          .report-sheet { display:block !important; box-sizing:border-box !important; width:210mm !important; max-width:none !important; height:297mm !important; min-height:0 !important; max-height:297mm !important; margin:0 !important; padding:15mm !important; border:0 !important; border-radius:0 !important; box-shadow:none !important; overflow:hidden !important; break-after:page !important; page-break-after:always !important; break-inside:avoid !important; page-break-inside:avoid !important; }
+          .report-sheet:last-child { break-after:auto !important; page-break-after:auto !important; }
+          .report-footer { left:15mm !important; right:15mm !important; bottom:12mm !important; }
+          .report-sheet .mascot-art { filter:drop-shadow(0 5px 3px rgba(50,65,90,.12)); }
         }
       `}</style>
 
@@ -194,7 +197,7 @@ export function ReportsPage() {
                       <h2 className="font-display text-3xl font-black leading-tight text-[#263b60]">Báo cáo<br/>tiến độ học tập</h2>
                       <p className="mt-2 inline-flex rounded-full bg-[#fff0c4] px-4 py-2 text-sm font-extrabold"> {periodLabel(report.period.from, report.period.to)} </p>
                     </div>
-                    <Mascot size={116} />
+                    <Mascot size={148} className="drop-shadow-md" />
                   </div>
                   <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#dce7fb] bg-[#f7faff] p-4">
                     <div><p className="text-lg font-black">{report.student.name}</p><p className="text-sm font-semibold text-slate-500">Lớp {report.className}</p></div>
@@ -222,7 +225,7 @@ export function ReportsPage() {
                     </div>
                     <p className="mt-3 text-xs font-semibold text-slate-500">Bút chì nhận được trong kỳ: {stats.pencils > 0 ? '+' : ''}{stats.pencils} · Tổng thưởng được cộng: {stats.pencilsEarned}</p>
                   </section>
-                  <div className="report-footer"><div><p className="font-display text-sm font-extrabold">Daily Duty Reminder</p><p className="text-xs font-semibold text-slate-500">Báo cáo cá nhân · Trang 1</p></div><Mascot size={48}/></div>
+                  <div className="report-footer"><div><p className="font-display text-sm font-extrabold">Daily Duty Reminder</p><p className="text-xs font-semibold text-slate-500">Báo cáo cá nhân · Trang 1</p></div><span className="text-2xl" aria-hidden="true">✦</span></div>
                 </article>
 
                 <article className="report-sheet">
@@ -247,15 +250,8 @@ export function ReportsPage() {
                       <h3>Định hướng tiếp theo</h3>
                       <div className="report-note">{note.next || '—'}</div>
                     </section>
-                    <section className="report-section">
-                      <h3>Nhiệm vụ trong kỳ</h3>
-                      {report.assignments.length ? <table className="report-table"><thead><tr><th>Nhiệm vụ</th><th>Ngày giao</th><th>Hạn nộp</th><th>Trạng thái</th></tr></thead><tbody>
-                        {report.assignments.slice(0, 12).map((item, index) => <tr key={index}><td>{item.title}</td><td>{prettyDate(item.assignmentDate)}</td><td>{prettyDate(item.deadlineDate)}</td><td>{item.status}</td></tr>)}
-                      </tbody></table> : <p className="text-sm font-semibold text-slate-500">Không có nhiệm vụ được giao trong khoảng thời gian này.</p>}
-                      {report.assignments.length > 12 ? <p className="mt-2 text-xs font-semibold text-slate-500">Còn {report.assignments.length - 12} nhiệm vụ khác không hiển thị trong bảng này.</p> : null}
-                    </section>
                   </div>
-                  <div className="report-footer"><div><p className="font-display text-sm font-extrabold">Cùng nhau đồng hành</p><p className="text-xs font-semibold text-slate-500">Vì một hành trình học tập tốt hơn!</p></div><Mascot size={48}/></div>
+                  <div className="report-footer"><div><p className="font-display text-sm font-extrabold">Cùng nhau đồng hành</p><p className="text-xs font-semibold text-slate-500">Vì một hành trình học tập tốt hơn!</p></div><span className="text-2xl" aria-hidden="true">✦</span></div>
                 </article>
               </div>
             );
