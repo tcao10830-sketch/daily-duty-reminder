@@ -191,12 +191,13 @@ export function MyTasksPage() {
 export function StudentTaskPage() {
   const { id = '' } = useParams();
   const { data, error, loading } = useQuery<{ assignment: AssignmentCard }>(`/api/student/tasks/${id}`);
-  const materials = useQuery<{ materials: { id: string; file_name: string; signedUrl: string | null; link_url: string | null }[] }>(`/api/student/tasks/${id}/materials`);
-  const submissions = useQuery<{ submissions: { id: string; file_name: string; files?: { file_name: string; signedUrl: string | null }[]; signedUrl: string | null; link_url: string | null; comment: string; created_at: string; review: { status: 'approved' | 'revision_requested'; feedback: string; created_at: string } | null }[] }>(`/api/student/assignments/${id}/submissions`);
+  const materials = useQuery<{ materials: { id: string; file_name: string; display_name?: string | null; signedUrl: string | null; link_url: string | null }[] }>(`/api/student/tasks/${id}/materials`);
+  const submissions = useQuery<{ submissions: { id: string; file_name: string; display_name?: string | null; files?: { file_name: string; signedUrl: string | null }[]; signedUrl: string | null; link_url: string | null; comment: string; created_at: string; review: { status: 'approved' | 'revision_requested'; feedback: string; created_at: string } | null }[] }>(`/api/student/assignments/${id}/submissions`);
   const { bump } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const [link, setLink] = useState('');
   const [comment, setComment] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState('');
   const [message, setMessage] = useState('');
@@ -216,7 +217,7 @@ export function StudentTaskPage() {
     try {
       const totalBytes = files.reduce((sum, item) => sum + item.size, 0);
       if (totalBytes > 10 * 1024 * 1024) throw new Error('Tổng dung lượng các tệp không được vượt quá 10 MB.');
-      const payload: Record<string, unknown> = { linkUrl: link.trim(), comment };
+      const payload: Record<string, unknown> = { linkUrl: link.trim(), comment, displayName: displayName.trim() };
       if (files.length) payload.files = await Promise.all(files.map((item) => fileUploadPayload(item)));
       if (!files.length && !link.trim()) throw new Error('Hãy chọn ít nhất một tệp hoặc thêm đường dẫn trước khi nộp.');
       await api(`/api/student/assignments/${task.assignmentId}/submissions`, {
@@ -226,6 +227,7 @@ export function StudentTaskPage() {
       setFiles([]);
       setLink('');
       setComment('');
+      setDisplayName('');
       setMessage('Bạn đã nộp bài thành công. Đồng hồ đếm ngược sẽ tạm dừng trong khi giáo viên xem bài.');
       setShowCelebration(true);
       playSubmissionCelebration();
@@ -277,7 +279,8 @@ export function StudentTaskPage() {
           <ul className="grid gap-2">
             {materials.data?.materials.map((item) => (
               <li key={item.id}>
-                <a className="font-extrabold text-[#315fc4] underline" href={item.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">{item.file_name}</a>
+                <a className="font-extrabold text-[#315fc4] underline" href={item.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">{item.display_name || item.file_name}</a>
+                {item.display_name && item.display_name !== item.file_name ? <p className="text-xs font-semibold text-slate-500">{item.file_name}</p> : null}
               </li>
             ))}
           </ul>
@@ -289,6 +292,7 @@ export function StudentTaskPage() {
         {latest ? (
           <div className="mb-4 rounded-2xl bg-[#f4f8ff] p-3">
             <p className="font-extrabold">Lần nộp gần nhất</p>
+            {latest.display_name ? <p className="mt-1 rounded-lg bg-[#FFF3B0] px-3 py-2 text-sm font-extrabold text-[#34445e]">Tên hiển thị: {latest.display_name}</p> : null}
             <div className="mt-1 grid gap-1">
               {(latest.files?.length ? latest.files : [{ file_name: latest.file_name, signedUrl: latest.signedUrl }]).map((item, index) => (
                 <a key={`${item.file_name}-${index}`} className="break-all text-sm font-bold text-[#315fc4] underline" href={item.signedUrl || latest.link_url || '#'} target="_blank" rel="noreferrer">{item.file_name}</a>
@@ -319,6 +323,9 @@ export function StudentTaskPage() {
                   <p className="font-extrabold">Total: {(files.reduce((sum, item) => sum + item.size, 0) / 1024 / 1024).toFixed(2)} / 10 MB</p>
                 </div>
               ) : null}
+            </Field>
+            <Field label="Tên hiển thị bài nộp (không bắt buộc)">
+              <input className={controlClass} value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={160} placeholder="VD: Bài tập Unit 5 - Nguyễn Văn A" />
             </Field>
             <Field label="Hoặc dán đường dẫn">
               <input className={controlClass} type="url" value={link} onChange={(event) => setLink(event.target.value)} placeholder="https://..." />
