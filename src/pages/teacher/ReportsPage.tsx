@@ -107,13 +107,12 @@ export function ReportsPage() {
           body * { visibility:hidden !important; }
           .report-print-area, .report-print-area * { visibility:visible !important; }
           .report-tools, .report-edit, .report-screen-only { display:none !important; }
-          .report-print-area { display:block !important; position:absolute !important; left:0 !important; top:0 !important; width:210mm !important; margin:0 !important; padding:0 !important; gap:0 !important; }
-          .report-print-area > div { display:contents !important; margin:0 !important; padding:0 !important; gap:0 !important; }
+          .report-print-area { display:block !important; position:static !important; inset:auto !important; width:210mm !important; max-width:none !important; margin:0 !important; padding:0 !important; }
+          .report-blank-page { display:block !important; box-sizing:border-box !important; width:210mm !important; height:297mm !important; margin:0 !important; padding:0 !important; break-after:page !important; page-break-after:always !important; }
+          .report-student-group { display:block !important; width:210mm !important; margin:0 !important; padding:0 !important; }
           .report-sheet { display:flex !important; flex-direction:column !important; float:none !important; clear:both !important; box-sizing:border-box !important; width:210mm !important; max-width:none !important; height:297mm !important; min-height:0 !important; max-height:297mm !important; margin:0 !important; padding:15mm !important; border:0 !important; border-radius:0 !important; box-shadow:none !important; overflow:hidden !important; break-after:page !important; page-break-after:always !important; break-inside:avoid !important; page-break-inside:avoid !important; }
           .report-sheet:last-child { break-after:auto !important; page-break-after:auto !important; }
-          .report-print-area > div:first-child > .report-sheet:first-of-type { break-before:page !important; page-break-before:always !important; }
-          .report-print-area .grid { gap:0 !important; row-gap:0 !important; }
-          .report-print-area .report-sheet + .report-sheet { margin-top:0 !important; }
+          .report-student-group .report-sheet + .report-sheet { margin-top:0 !important; }
           .report-footer { position:static !important; flex:none !important; margin-top:auto !important; }
           .report-sheet .mascot-art { filter:drop-shadow(0 5px 3px rgba(50,65,90,.12)); }
         }
@@ -170,13 +169,14 @@ export function ReportsPage() {
       </section>
 
       {reports.length ? (
-        <div className="report-preview report-print-area grid gap-5">
+        <div className="report-preview report-print-area">
+          <div className="report-blank-page report-screen-only" aria-hidden="true" />
           {reports.map((report) => {
             const note = notes[report.student.id] ?? emptyNotes;
             const stats = report.stats;
             const ratio = stats.completionRate;
             return (
-              <div key={report.student.id} className="grid gap-3">
+              <div key={report.student.id} className="report-student-group">
                 <section className="report-edit report-tools">
                   <h2 className="font-extrabold">Nhận xét · {report.student.name}</h2>
                   <div className="grid gap-2 sm:grid-cols-2">
