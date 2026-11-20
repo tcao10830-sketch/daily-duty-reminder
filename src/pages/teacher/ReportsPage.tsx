@@ -168,7 +168,7 @@ export function ReportsPage() {
           {reports.map((report) => {
             const note = notes[report.student.id] ?? emptyNotes;
             const stats = report.stats;
-            const ratio = stats.assigned ? Math.round(stats.onTime * 100 / stats.assigned) : 0;
+            const ratio = stats.completionRate;
             return (
               <div key={report.student.id} className="grid gap-3">
                 <section className="report-edit report-tools">
