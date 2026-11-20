@@ -179,7 +179,7 @@ export function TaskEditPage() {
 export function TaskDetailPage() {
   const { id = '' } = useParams();
   const { data, error, loading } = useQuery<{ task: TaskSummary; assignments: AssignmentCard[] }>(`/api/teacher/tasks/${id}`);
-  const materials = useQuery<{ materials: { id: string; file_name: string; signedUrl: string | null; link_url: string | null }[] }>(`/api/teacher/tasks/${id}/materials`);
+  const materials = useQuery<{ materials: { id: string; file_name: string; display_name?: string | null; signedUrl: string | null; link_url: string | null }[] }>(`/api/teacher/tasks/${id}/materials`);
   const [materialFile, setMaterialFile] = useState<File | null>(null);
   const [materialLink, setMaterialLink] = useState('');
   const [materialLabel, setMaterialLabel] = useState('');
@@ -250,13 +250,13 @@ export function TaskDetailPage() {
           <ul className="mb-3 grid gap-2">
             {materials.data?.materials.map((item) => (
               <li key={item.id}>
-                <a className="font-bold text-[#315fc4] underline" href={item.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">{item.file_name}</a>
+                <a className="font-bold text-[#315fc4] underline" href={item.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">{item.display_name || item.file_name}</a>
               </li>
             ))}
           </ul>
         ) : <p className="mb-3 text-sm font-semibold text-slate-500">Chưa có tài liệu nào được đính kèm.</p>}
         <form className="grid gap-2 sm:grid-cols-2" onSubmit={(event) => void addMaterial(event)}>
-          <input className="rounded-xl border p-2 text-sm" value={materialLabel} onChange={(event) => setMaterialLabel(event.target.value)} placeholder="Tên hiển thị (không bắt buộc)" />
+          <input className="rounded-xl border p-2 text-sm" value={materialLabel} onChange={(event) => setMaterialLabel(event.target.value)} placeholder="Tên hiển thị cho học sinh (VD: Bài luyện tập Unit 5)" />
           <input className="rounded-xl border p-2 text-sm" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => setMaterialFile(event.target.files?.[0] ?? null)} />
           <input className="rounded-xl border p-2 text-sm sm:col-span-2" type="url" value={materialLink} onChange={(event) => setMaterialLink(event.target.value)} placeholder="Hoặc dán đường dẫn tài liệu https://..." />
           {materialError ? <div className="sm:col-span-2"><Banner tone="error">{materialError}</Banner></div> : null}
