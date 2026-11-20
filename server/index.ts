@@ -99,6 +99,7 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'PATCH', pattern: '/api/teacher/students/:id', run: async (params) => ({ student: await store.updateStudent(requireUser(user, 'teacher').id, params.id, body) }) },
     { method: 'DELETE', pattern: '/api/teacher/students/:id', run: async (params) => store.deleteStudent(requireUser(user, 'teacher').id, params.id) },
     { method: 'GET', pattern: '/api/teacher/students/:id', run: async (params) => store.studentProgress(requireUser(user, 'teacher').id, params.id) },
+    { method: 'POST', pattern: '/api/teacher/reports/preview', run: async () => store.teacherStudentReports(requireUser(user, 'teacher').id, body as { classId: unknown; studentIds: unknown; from: unknown; to: unknown }) },
     { method: 'GET', pattern: '/api/teacher/rewards', run: async () => teacherRewards(requireUser(user, 'teacher').id) },
     { method: 'PUT', pattern: '/api/teacher/rewards/early-rules', run: async () => saveEarlyRewardRules(requireUser(user, 'teacher').id, body.rules) },
     { method: 'POST', pattern: '/api/teacher/rewards/students/:id/adjust', run: async (params) => adjustStudentPencils(requireUser(user, 'teacher').id, params.id, body.amount, body.note) },
