@@ -1034,9 +1034,9 @@ export function teacherStudentReports(
       const pencil = db.prepare(
         `SELECT COALESCE(SUM(amount), 0) AS total,
                 COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS earned
-         FROM pencil_ledger WHERE student_id = ? AND teacher_id = ?
-           AND created_at >= ? AND created_at < datetime(?, '+1 day')`,
-      ).get(student.id, teacherId, from, to) as { total: number; earned: number };
+         FROM pencil_ledger WHERE student_id = ?
+           AND date(created_at) >= date(?) AND date(created_at) <= date(?)`,
+      ).get(student.id, from, to) as { total: number; earned: number };
       return {
         student: { id: student.id, name: student.name, email: student.email },
         className: ownedClass.name,
