@@ -305,6 +305,11 @@ button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
   text-align: center;
   animation: celebration-card-pop .42s cubic-bezier(.2,1.35,.4,1) both;
 }
+.celebration-mascot {
+  margin: -4px 0 1px;
+  filter: drop-shadow(0 7px 8px rgba(111,83,33,.14));
+  animation: celebration-mascot-pop .7s cubic-bezier(.2,1.35,.4,1) .12s both, celebration-mascot-float 1.8s ease-in-out .82s infinite;
+}
 .celebration-message strong {
   color: #315fbf;
   font-family: "Be Vietnam Pro", sans-serif;
@@ -340,6 +345,14 @@ button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
     transform: translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(.72) rotate(var(--burst-spin));
   }
 }
+@keyframes celebration-mascot-pop {
+  from { opacity: 0; transform: translateY(15px) scale(.55) rotate(-12deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+@keyframes celebration-mascot-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+}
 @keyframes celebration-card-pop {
   from { opacity: 0; transform: translateY(9px) scale(.78); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -357,7 +370,7 @@ button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
   .celebration-message > span:nth-child(3) { font-size: .88rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .burst-particle, .celebration-message, .celebration-sparkle {
+  .burst-particle, .celebration-message, .celebration-sparkle, .celebration-mascot {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
   }
