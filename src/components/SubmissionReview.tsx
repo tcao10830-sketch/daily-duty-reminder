@@ -49,7 +49,8 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
   return (
     <div className="min-w-[220px] space-y-2">
       {items.length === 0 ? <span className="text-xs font-semibold text-slate-400">Chưa có bài nộp</span> : items.map((item) => (
-        <div key={item.id} className="rounded-xl bg-[#f7f9fc] p-2">\n          {item.display_name ? <p className="mb-2 rounded-lg bg-[#FFF3B0] px-2 py-1.5 text-sm font-extrabold text-[#34445e]">Tên hiển thị: {item.display_name}</p> : null}
+        <div key={item.id} className="rounded-xl bg-[#f7f9fc] p-2">
+          {item.display_name ? <p className="mb-2 rounded-lg bg-[#FFF3B0] px-2 py-1.5 text-sm font-extrabold text-[#34445e]">Tên hiển thị: {item.display_name}</p> : null}
           <div className="grid gap-1">
             {(item.files?.length ? item.files : [{ file_name: item.file_name, signedUrl: item.signedUrl }]).map((file, index) => (
               <a key={`${file.file_name}-${index}`} className="break-all text-sm font-extrabold text-[#315fc4] underline" href={file.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">
