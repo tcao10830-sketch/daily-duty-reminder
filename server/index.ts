@@ -158,7 +158,9 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       if (status === 'approved') {
         await store.completeAssignmentAt(assignment.studentId, assignment.assignmentId, submission.created_at);
         await awardQualityPencils(teacher.id, assignment.assignmentId, body.qualityPencils ?? 0);
-        await store.notifySubmissionReview(assignment.studentId, assignment.assignmentId, true);
+        if (Number(body.qualityPencils ?? 0) > 0) {
+          await store.notifySubmissionReview(assignment.studentId, assignment.assignmentId, true);
+        }
       } else {
         await store.requestAssignmentRevision(teacher.id, assignment.assignmentId, review.review.created_at || new Date().toISOString());
       }
