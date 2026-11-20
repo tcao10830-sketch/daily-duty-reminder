@@ -82,7 +82,7 @@ export function ReportsPage() {
     <div className="grid gap-4">
       <style>{`
         .report-preview { color: #263b60; font-family: "Be Vietnam Pro", "Segoe UI", sans-serif; }
-        .report-sheet { box-sizing: border-box; width: 100%; max-width: 820px; min-height: 1080px; margin: 0 auto 22px; padding: 38px; overflow: hidden; position: relative; border: 1px solid #e4ecfa; border-radius: 28px; background: radial-gradient(circle at 92% 7%, #e5efff 0, transparent 25%), radial-gradient(circle at 4% 94%, #fff0d5 0, transparent 20%), linear-gradient(155deg,#fff 0%,#fffdf7 100%); box-shadow: 0 8px 28px rgba(50,80,130,.08); }
+        .report-sheet { box-sizing: border-box; display:flex; flex-direction:column; width: 100%; max-width: 820px; min-height: 1080px; margin: 0 auto 22px; padding: 38px; overflow: hidden; position: relative; border: 1px solid #e4ecfa; border-radius: 28px; background: radial-gradient(circle at 92% 7%, #e5efff 0, transparent 25%), radial-gradient(circle at 4% 94%, #fff0d5 0, transparent 20%), linear-gradient(155deg,#fff 0%,#fffdf7 100%); box-shadow: 0 8px 28px rgba(50,80,130,.08); }
         .report-chip { display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:9px 16px; background:#fff0c4; color:#344b70; font-weight:800; }
         .report-stat { border-radius:20px; padding:16px 10px; text-align:center; background:#fff; border:1px solid #e7edfa; }
         .report-stat strong { display:block; font-size:30px; line-height:1.15; color:#263b60; }
@@ -93,7 +93,7 @@ export function ReportsPage() {
         .report-table { width:100%; border-collapse:collapse; font-size:11px; }
         .report-table th { background:#eaf1ff; text-align:left; color:#34445e; padding:9px 8px; }
         .report-table td { border-bottom:1px solid #e8edf5; padding:8px; vertical-align:top; }
-        .report-footer { position:absolute; bottom:30px; left:38px; right:38px; border-radius:20px; background:#edf4ff; padding:13px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .report-footer { position:static; flex:none; margin-top:auto; border-radius:20px; background:#edf4ff; padding:13px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
         .report-donut { width:118px; height:118px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(#4f87ff var(--rate), #ffb65e 0); position:relative; flex:none; }
         .report-donut:before { content:""; position:absolute; inset:13px; border-radius:50%; background:white; }
         .report-donut strong { position:relative; font-size:23px; }
@@ -109,9 +109,9 @@ export function ReportsPage() {
           .report-tools, .report-edit, .report-screen-only { display:none !important; }
           .report-print-area { display:block !important; position:absolute !important; inset:0 auto auto 0 !important; width:210mm !important; margin:0 !important; padding:0 !important; }
           .report-print-area > div { display:contents !important; }
-          .report-sheet { display:block !important; box-sizing:border-box !important; width:210mm !important; max-width:none !important; height:297mm !important; min-height:0 !important; max-height:297mm !important; margin:0 !important; padding:15mm !important; border:0 !important; border-radius:0 !important; box-shadow:none !important; overflow:hidden !important; break-after:page !important; page-break-after:always !important; break-inside:avoid !important; page-break-inside:avoid !important; }
+          .report-sheet { display:flex !important; flex-direction:column !important; box-sizing:border-box !important; width:210mm !important; max-width:none !important; height:297mm !important; min-height:0 !important; max-height:297mm !important; margin:0 !important; padding:15mm !important; border:0 !important; border-radius:0 !important; box-shadow:none !important; overflow:hidden !important; break-after:page !important; page-break-after:always !important; break-inside:avoid !important; page-break-inside:avoid !important; }
           .report-sheet:last-child { break-after:auto !important; page-break-after:auto !important; }
-          .report-footer { left:15mm !important; right:15mm !important; bottom:12mm !important; }
+          .report-footer { position:static !important; flex:none !important; margin-top:auto !important; }
           .report-sheet .mascot-art { filter:drop-shadow(0 5px 3px rgba(50,65,90,.12)); }
         }
       `}</style>
