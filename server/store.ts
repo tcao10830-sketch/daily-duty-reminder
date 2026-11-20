@@ -982,6 +982,93 @@ export function studentProgress(teacherId: string, studentId: string) {
   });
 }
 
+
+export function teacherStudentReports(
+  teacherId: string,
+  input: { classId: unknown; studentIds: unknown; from: unknown; to: unknown },
+) {
+  return withDb(() => {
+    const classId = clean(input.classId, 100);
+    const from = clean(input.from, 10);
+    const to = clean(input.to, 10);
+    if (!classId || !isIsoDate(from) || !isIsoDate(to) || from > to) {
+      throw new HttpError(400, 'Vui lòng chọn lớp và khoảng thời gian hợp lệ.');
+    }
+    const ownedClass = db.prepare(
+      'SELECT id, name FROM classes WHERE id = ? AND teacher_id = ?',
+    ).get(classId, teacherId) as { id: string; name: string } | undefined;
+    if (!ownedClass) throw new HttpError(404, 'Không tìm thấy lớp học.');
+
+    const requestedIds = Array.isArray(input.studentIds)
+      ? [...new Set(input.studentIds.map((value) => clean(value, 100)).filter(Boolean))]
+      : [];
+    if (!requestedIds.length || requestedIds.length > 100) {
+      throw new HttpError(400, 'Hãy chọn từ 1 đến 100 học sinh.');
+    }
+    const placeholders = requestedIds.map(() => '?').join(',');
+    const students = db.prepare(
+      `SELECT u.id, u.name, u.email
+       FROM users u
+       JOIN class_members m ON m.student_id = u.id
+       WHERE m.class_id = ? AND u.role = 'student' AND u.id IN (${placeholders})
+       ORDER BY u.name`,
+    ).all(classId, ...requestedIds) as { id: string; name: string; email: string }[];
+    if (students.length !== requestedIds.length) {
+      throw new HttpError(400, 'Danh sách có học sinh không thuộc lớp đã chọn.');
+    }
+    const teacher = db.prepare('SELECT name FROM users WHERE id = ? AND role = ?').get(teacherId, 'teacher') as { name: string } | undefined;
+    const result = students.map((student) => {
+      const rows = db.prepare(
+        `${assignmentSelect}
+         WHERE a.student_id = ? AND t.teacher_id = ? AND t.class_id = ?
+           AND t.assignment_date >= ? AND t.assignment_date <= ?
+           AND t.status = 'active'
+         ORDER BY t.assignment_date, t.deadline_date, t.deadline_time`,
+      ).all(student.id, teacherId, classId, from, to) as unknown as AssignmentRow[];
+      const assignments = rows.map(mapAssignment);
+      const completed = assignments.filter((item) => item.completedAt);
+      const submittedWaiting = assignments.filter((item) => item.submissionPending);
+      const overdue = assignments.filter((item) => !item.completedAt && !item.submissionPending && item.status === 'overdue');
+      const onTime = completed.filter((item) => item.status === 'on_time');
+      const late = completed.filter((item) => item.status === 'late');
+      const pencil = db.prepare(
+        `SELECT COALESCE(SUM(amount), 0) AS total,
+                COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS earned
+         FROM pencil_ledger WHERE student_id = ? AND teacher_id = ?
+           AND created_at >= ? AND created_at < datetime(?, '+1 day')`,
+      ).get(student.id, teacherId, from, to) as { total: number; earned: number };
+      return {
+        student: { id: student.id, name: student.name, email: student.email },
+        className: ownedClass.name,
+        teacherName: teacher?.name ?? '',
+        period: { from, to },
+        stats: {
+          assigned: assignments.length,
+          completed: completed.length,
+          completionRate: assignments.length ? Math.round(completed.length * 100 / assignments.length) : 0,
+          onTime: onTime.length,
+          late: late.length,
+          overdue: overdue.length,
+          submittedWaiting: submittedWaiting.length,
+          pending: assignments.length - completed.length - submittedWaiting.length - overdue.length,
+          pencils: pencil.total,
+          pencilsEarned: pencil.earned,
+        },
+        assignments: assignments.map((item) => ({
+          title: item.title,
+          assignmentDate: item.assignmentDate,
+          deadlineDate: item.deadlineDate,
+          status: item.completedAt
+            ? item.status === 'on_time' ? 'Đúng hạn' : 'Hoàn thành muộn'
+            : item.submissionPending ? 'Đã nộp – chờ duyệt'
+            : item.status === 'overdue' ? 'Quá hạn' : 'Chưa hoàn thành',
+        })),
+      };
+    });
+    return { reports: result };
+  });
+}
+
 export function listNotifications(userId: string) {
   return withDb(() => {
     sweepLocked();
