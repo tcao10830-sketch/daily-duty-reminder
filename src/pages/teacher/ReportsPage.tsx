@@ -107,10 +107,11 @@ export function ReportsPage() {
           body * { visibility:hidden !important; }
           .report-print-area, .report-print-area * { visibility:visible !important; }
           .report-tools, .report-edit, .report-screen-only { display:none !important; }
-          .report-print-area { display:block !important; position:absolute !important; left:0 !important; top:297mm !important; width:210mm !important; margin:0 !important; padding:0 !important; gap:0 !important; }
+          .report-print-area { display:block !important; position:absolute !important; left:0 !important; top:0 !important; width:210mm !important; margin:0 !important; padding:0 !important; gap:0 !important; }
           .report-print-area > div { display:contents !important; margin:0 !important; padding:0 !important; gap:0 !important; }
           .report-sheet { display:flex !important; flex-direction:column !important; float:none !important; clear:both !important; box-sizing:border-box !important; width:210mm !important; max-width:none !important; height:297mm !important; min-height:0 !important; max-height:297mm !important; margin:0 !important; padding:15mm !important; border:0 !important; border-radius:0 !important; box-shadow:none !important; overflow:hidden !important; break-after:page !important; page-break-after:always !important; break-inside:avoid !important; page-break-inside:avoid !important; }
           .report-sheet:last-child { break-after:auto !important; page-break-after:auto !important; }
+          .report-print-area > div:first-child > .report-sheet:first-of-type { break-before:page !important; page-break-before:always !important; }
           .report-print-area .grid { gap:0 !important; row-gap:0 !important; }
           .report-print-area .report-sheet + .report-sheet { margin-top:0 !important; }
           .report-footer { position:static !important; flex:none !important; margin-top:auto !important; }
