@@ -122,6 +122,17 @@ CREATE TABLE IF NOT EXISTS notifications (
   UNIQUE (user_id, type, entity_id)
 );
 
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  subscription_json TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
+
+
 CREATE TABLE IF NOT EXISTS reward_settings (
   teacher_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   early_rules_json TEXT NOT NULL DEFAULT '[]',
