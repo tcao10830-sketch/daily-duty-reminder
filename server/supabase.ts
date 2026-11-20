@@ -12,6 +12,7 @@ type StoredFile = {
   student_id?: string;
   teacher_id?: string;
   file_name: string;
+  display_name?: string | null;
   storage_path: string | null;
   mime_type: string | null;
   size_bytes: number;
@@ -244,6 +245,7 @@ export async function createMaterial(taskId: string, teacherId: string, body: Re
     task_id: taskId,
     teacher_id: teacherId,
     file_name: file?.name || String(body.label || 'Reference link').slice(0, 160),
+    display_name: String(body.displayName || body.label || file?.name || 'Tài liệu tham khảo').trim().slice(0, 160),
     storage_path: file?.path || null,
     mime_type: file?.mime || null,
     size_bytes: file?.size || 0,
@@ -263,6 +265,7 @@ export async function createSubmission(assignmentId: string, studentId: string, 
     assignment_id: assignmentId,
     student_id: studentId,
     file_name: files.length ? JSON.stringify(files.map((item) => item.name)) : String(body.label || 'Submitted link').slice(0, 160),
+    display_name: String(body.displayName || (files.length ? 'Bài nộp' : 'Đường dẫn bài nộp')).trim().slice(0, 160),
     storage_path: files.length ? JSON.stringify(files.map((item) => item.path)) : null,
     mime_type: files.length ? JSON.stringify(files.map((item) => item.mime)) : null,
     size_bytes: total,
