@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useQuery } from '../lib/query';
 import { greeting, hcmToday, formatWeekdayDate } from '../lib/format';
 import { InstallAppButton } from './InstallAppButton';
+import { PushNotificationButton } from './PushNotificationButton';
 import { playNotificationSound } from '../lib/sounds';
 import type { NotificationItem } from '../types';
 
@@ -58,6 +59,7 @@ export function AppShell() {
           </div>
         </div>
         <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">
+          <PushNotificationButton />
           <InstallAppButton />
           <div className="hidden items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-xs font-extrabold text-[#52705f] sm:flex">
             <span className="text-[#38C98B]">●</span>
