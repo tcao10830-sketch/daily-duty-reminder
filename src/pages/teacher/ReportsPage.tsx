@@ -79,7 +79,7 @@ export function ReportsPage() {
   if (loading && !data) return <Loading />;
 
   return (
-    <div className="grid gap-4">
+    <div className="report-page-root grid gap-4">
       <style>{`
         .report-preview { color: #263b60; font-family: "Be Vietnam Pro", "Segoe UI", sans-serif; }
         .report-sheet { box-sizing: border-box; display:flex; flex-direction:column; width: 100%; max-width: 820px; min-height: 1080px; margin: 0 auto 22px; padding: 38px; overflow: hidden; position: relative; border: 1px solid #e4ecfa; border-radius: 28px; background: radial-gradient(circle at 92% 7%, #e5efff 0, transparent 25%), radial-gradient(circle at 4% 94%, #fff0d5 0, transparent 20%), linear-gradient(155deg,#fff 0%,#fffdf7 100%); box-shadow: 0 8px 28px rgba(50,80,130,.08); }
@@ -105,6 +105,7 @@ export function ReportsPage() {
           html, body, #root { width:210mm !important; margin:0 !important; padding:0 !important; background:#fff !important; }
           body { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
           body * { visibility:hidden !important; }
+          .report-page-root > :not(.report-print-area) { display:none !important; }
           .report-print-area, .report-print-area * { visibility:visible !important; }
           .report-tools, .report-edit, .report-screen-only { display:none !important; }
           .report-print-area { display:block !important; position:static !important; inset:auto !important; width:210mm !important; max-width:none !important; margin:0 !important; padding:0 !important; }
