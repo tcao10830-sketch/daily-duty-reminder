@@ -22,6 +22,7 @@ const teacherLinks = [
 
 const studentLinks = [
   ['/student', 'Trang chủ', '⌂'],
+  ['/student/apps', 'Ứng dụng', '▦'],
   ['/student/tasks', 'Nhiệm vụ của tôi', '✓'],
   ['/student/calendar', 'Lịch', '▣'],
   ['/student/progress', 'Tiến độ của tôi', '↗'],
