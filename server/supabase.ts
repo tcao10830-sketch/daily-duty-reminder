@@ -314,11 +314,127 @@ export async function cleanupExpiredSubmissions() {
   let removed = 0;
   for (const item of expired) {
     const paths = storedPaths(item.storage_path);
+    // Keep the database row if any file deletion fails so the next sweep can retry safely.
     for (const path of paths) {
       await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
     }
     await request(`/rest/v1/assignment_submissions?id=eq.${encodeURIComponent(item.id)}`, { method: 'DELETE' });
     removed += 1;
+  }
+  return removed;
+}
+
+/** Remove a task's material records and their files. The separate backup bucket is never touched. */
+export async function deleteTaskMaterials(taskId: string): Promise<number> {
+  const items = await rows('task_materials', `task_id=eq.${encodeURIComponent(taskId)}&select=id,storage_path`);
+  // Remove references first. If Storage is temporarily unavailable, the orphan sweep can retry later.
+  await request(`/rest/v1/task_materials?task_id=eq.${encodeURIComponent(taskId)}`, { method: 'DELETE' });
+  for (const item of items) {
+    for (const path of storedPaths(item.storage_path)) {
+      try {
+        await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
+      } catch (error) {
+        console.error('Task material file cleanup failed; orphan sweep will retry:', path, error);
+      }
+    }
+  }
+  return items.length;
+}
+
+type StorageListEntry = {
+  name: string;
+  id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+/** Recursively list objects under an app-owned folder in task-files. */
+async function listStorageFiles(prefix: 'materials' | 'submissions') {
+  const pending = [prefix];
+  const visited = new Set<string>();
+  const files: { path: string; createdAt: string | null }[] = [];
+
+  while (pending.length) {
+    const current = pending.shift()!;
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    for (let offset = 0; ; offset += 100) {
+      const page = await request(`/storage/v1/object/list/${bucket}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prefix: current,
+          limit: 100,
+          offset,
+          sortBy: { column: 'name', order: 'asc' },
+        }),
+      }) as StorageListEntry[];
+
+      if (!Array.isArray(page) || page.length === 0) break;
+      for (const entry of page) {
+        if (!entry?.name || entry.name === '.' || entry.name === '..') continue;
+        const path = `${current}/${entry.name}`;
+        if (entry.id == null) {
+          if (!visited.has(path)) pending.push(path);
+        } else {
+          files.push({ path, createdAt: entry.created_at || entry.updated_at || null });
+        }
+      }
+      if (page.length < 100) break;
+    }
+  }
+
+  return files;
+}
+
+async function referencedStoragePaths(table: 'task_materials' | 'assignment_submissions') {
+  const referenced = new Set<string>();
+  for (let offset = 0; ; offset += 1000) {
+    const page = await request(`/rest/v1/${table}?select=storage_path`, {
+      method: 'GET',
+      headers: {
+        'Range-Unit': 'items',
+        Range: `${offset}-${offset + 999}`,
+      },
+    }) as { storage_path: string | null }[];
+    if (!Array.isArray(page)) break;
+    for (const row of page) {
+      for (const path of storedPaths(row.storage_path)) referenced.add(path);
+    }
+    if (page.length < 1000) break;
+  }
+  return referenced;
+}
+
+/**
+ * Delete only unreferenced app uploads older than seven days.
+ * A grace period protects files between upload and database-record creation.
+ * This scans task-files/materials and task-files/submissions only; it never lists or deletes backups.
+ */
+export async function cleanupOrphanedStorageObjects(): Promise<number> {
+  const [materialPaths, submissionPaths] = await Promise.all([
+    referencedStoragePaths('task_materials'),
+    referencedStoragePaths('assignment_submissions'),
+  ]);
+  const referenced = new Set([...materialPaths, ...submissionPaths]);
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  let removed = 0;
+
+  for (const prefix of ['materials', 'submissions'] as const) {
+    const files = await listStorageFiles(prefix);
+    for (const file of files) {
+      if (referenced.has(file.path)) continue;
+      const createdAt = file.createdAt ? Date.parse(file.createdAt) : NaN;
+      // If Storage doesn't provide a trustworthy timestamp, leave the object untouched.
+      if (!Number.isFinite(createdAt) || createdAt > cutoff) continue;
+      try {
+        await request(`/storage/v1/object/${bucket}/${file.path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
+        removed += 1;
+      } catch (error) {
+        console.error('Orphan storage cleanup failed; will retry next run:', file.path, error);
+      }
+    }
   }
   return removed;
 }
