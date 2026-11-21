@@ -5,6 +5,7 @@ import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { RewardsPage } from './pages/teacher/RewardsPage';
 import { ReportsPage } from './pages/teacher/ReportsPage';
 import { AchievementsPage } from './pages/student/AchievementsPage';
+import { StudentAppsPage } from './pages/student/StudentAppsPage';
 import { ClassPage, ClassesPage } from './pages/teacher/ClassesPage';
 import { DashboardPage } from './pages/teacher/DashboardPage';
 import { NotificationsPage, ProgressPage, SettingsPage, StudentProgressPage, TeacherCalendarPage } from './pages/teacher/MorePages';
@@ -51,6 +52,7 @@ export function App() {
       </Route>
       <Route element={<Guard role="student" />}>
         <Route path="/student" element={<StudentHomePage />} />
+        <Route path="/student/apps" element={<StudentAppsPage />} />
         <Route path="/student/tasks" element={<MyTasksPage />} />
         <Route path="/student/tasks/:id" element={<StudentTaskPage />} />
         <Route path="/student/calendar" element={<StudentCalendarPage />} />
