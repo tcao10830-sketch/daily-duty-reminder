@@ -5,6 +5,16 @@ const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'task-files';
 const databaseSnapshotBucket = process.env.SUPABASE_DATABASE_BUCKET || 'app-database-backups';
 const maxBytes = 10 * 1024 * 1024;
 
+function assertTaskStorageBucket() {
+  if (bucket === databaseSnapshotBucket) {
+    throw new Error('Refusing to run task-file cleanup against the database backup bucket.');
+  }
+}
+
+function isManagedPath(path: string, prefix: 'materials' | 'submissions') {
+  return path.startsWith(`${prefix}/`) && !path.includes('\\\\') && !path.split('/').some((part) => part === '.' || part === '..');
+}
+
 type StoredFile = {
   id: string;
   task_id?: string;
@@ -314,6 +324,11 @@ export async function cleanupExpiredSubmissions() {
   let removed = 0;
   for (const item of expired) {
     const paths = storedPaths(item.storage_path);
+    // Never allow a malformed database path to point cleanup outside the submissions folder.
+    if (paths.some((path) => !isManagedPath(path, 'submissions'))) {
+      console.error('Skipping expired submission with an unexpected storage path:', item.id);
+      continue;
+    }
     // Keep the database row if any file deletion fails so the next sweep can retry safely.
     for (const path of paths) {
       await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
@@ -326,11 +341,16 @@ export async function cleanupExpiredSubmissions() {
 
 /** Remove a task's material records and their files. The separate backup bucket is never touched. */
 export async function deleteTaskMaterials(taskId: string): Promise<number> {
+  assertTaskStorageBucket();
   const items = await rows('task_materials', `task_id=eq.${encodeURIComponent(taskId)}&select=id,storage_path`);
   // Remove references first. If Storage is temporarily unavailable, the orphan sweep can retry later.
   await request(`/rest/v1/task_materials?task_id=eq.${encodeURIComponent(taskId)}`, { method: 'DELETE' });
   for (const item of items) {
     for (const path of storedPaths(item.storage_path)) {
+      if (!isManagedPath(path, 'materials')) {
+        console.error('Skipping task material with an unexpected storage path:', item.id);
+        continue;
+      }
       try {
         await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
       } catch (error) {
@@ -412,7 +432,33 @@ async function referencedStoragePaths(table: 'task_materials' | 'assignment_subm
  * A grace period protects files between upload and database-record creation.
  * This scans task-files/materials and task-files/submissions only; it never lists or deletes backups.
  */
-export async function cleanupOrphanedStorageObjects(): Promise<number> {
+export async function cleanupOrphanedStorageObjects(activeTaskIds: string[]): Promise<number> {
+  assertTaskStorageBucket();
+  const activeTasks = new Set(activeTaskIds);
+
+  // A task may have been deleted while Supabase was unavailable. Remove its stale
+  // material metadata first so the associated files become eligible for cleanup.
+  for (let offset = 0; ; offset += 1000) {
+    const materialRows = await request('/rest/v1/task_materials?select=id,task_id,storage_path', {
+      method: 'GET',
+      headers: { 'Range-Unit': 'items', Range: `${offset}-${offset + 999}` },
+    }) as { id: string; task_id: string; storage_path: string | null }[];
+    if (!Array.isArray(materialRows) || materialRows.length === 0) break;
+    for (const material of materialRows) {
+      if (activeTasks.has(material.task_id)) continue;
+      await request(`/rest/v1/task_materials?id=eq.${encodeURIComponent(material.id)}`, { method: 'DELETE' });
+      for (const path of storedPaths(material.storage_path)) {
+        if (!isManagedPath(path, 'materials')) continue;
+        try {
+          await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
+        } catch (error) {
+          console.error('Deleted-task material cleanup failed; orphan sweep will retry:', path, error);
+        }
+      }
+    }
+    if (materialRows.length < 1000) break;
+  }
+
   const [materialPaths, submissionPaths] = await Promise.all([
     referencedStoragePaths('task_materials'),
     referencedStoragePaths('assignment_submissions'),
