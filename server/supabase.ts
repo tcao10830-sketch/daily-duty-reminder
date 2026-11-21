@@ -12,7 +12,10 @@ function assertTaskStorageBucket() {
 }
 
 function isManagedPath(path: string, prefix: 'materials' | 'submissions') {
-  return path.startsWith(`${prefix}/`) && !path.includes('\\\\') && !path.split('/').some((part) => part === '.' || part === '..');
+  const parts = path.split('/');
+  return parts[0] === prefix &&
+    parts.length >= 2 &&
+    parts.slice(1).every((part) => Boolean(part) && part !== '.' && part !== '..' && !part.includes(String.fromCharCode(92)));
 }
 
 type StoredFile = {
@@ -320,6 +323,7 @@ export async function reviewSubmission(submissionId: string, teacherId: string, 
 
 
 export async function cleanupExpiredSubmissions() {
+  assertTaskStorageBucket();
   const expired = await rows('assignment_submissions', `expires_at=lte.${encodeURIComponent(new Date().toISOString())}&select=id,storage_path`);
   let removed = 0;
   for (const item of expired) {
@@ -370,7 +374,7 @@ type StorageListEntry = {
 
 /** Recursively list objects under an app-owned folder in task-files. */
 async function listStorageFiles(prefix: 'materials' | 'submissions') {
-  const pending = [prefix];
+  const pending = [`${prefix}/`];
   const visited = new Set<string>();
   const files: { path: string; createdAt: string | null }[] = [];
 
@@ -394,9 +398,10 @@ async function listStorageFiles(prefix: 'materials' | 'submissions') {
       if (!Array.isArray(page) || page.length === 0) break;
       for (const entry of page) {
         if (!entry?.name || entry.name === '.' || entry.name === '..') continue;
-        const path = `${current}/${entry.name}`;
+        const path = `${current}${entry.name}`;
         if (entry.id == null) {
-          if (!visited.has(path)) pending.push(path);
+          const folderPath = `${path}/`;
+          if (!visited.has(folderPath)) pending.push(folderPath);
         } else {
           files.push({ path, createdAt: entry.created_at || entry.updated_at || null });
         }
@@ -436,27 +441,29 @@ export async function cleanupOrphanedStorageObjects(activeTaskIds: string[]): Pr
   assertTaskStorageBucket();
   const activeTasks = new Set(activeTaskIds);
 
-  // A task may have been deleted while Supabase was unavailable. Remove its stale
-  // material metadata first so the associated files become eligible for cleanup.
+  // A task may have been deleted while Supabase was unavailable. Collect all
+  // material rows before deleting any so offset pagination cannot skip records.
+  const allMaterials: { id: string; task_id: string; storage_path: string | null }[] = [];
   for (let offset = 0; ; offset += 1000) {
-    const materialRows = await request('/rest/v1/task_materials?select=id,task_id,storage_path', {
+    const page = await request('/rest/v1/task_materials?select=id,task_id,storage_path', {
       method: 'GET',
       headers: { 'Range-Unit': 'items', Range: `${offset}-${offset + 999}` },
     }) as { id: string; task_id: string; storage_path: string | null }[];
-    if (!Array.isArray(materialRows) || materialRows.length === 0) break;
-    for (const material of materialRows) {
-      if (activeTasks.has(material.task_id)) continue;
-      await request(`/rest/v1/task_materials?id=eq.${encodeURIComponent(material.id)}`, { method: 'DELETE' });
-      for (const path of storedPaths(material.storage_path)) {
-        if (!isManagedPath(path, 'materials')) continue;
-        try {
-          await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
-        } catch (error) {
-          console.error('Deleted-task material cleanup failed; orphan sweep will retry:', path, error);
-        }
+    if (!Array.isArray(page) || page.length === 0) break;
+    allMaterials.push(...page);
+    if (page.length < 1000) break;
+  }
+  for (const material of allMaterials) {
+    if (activeTasks.has(material.task_id)) continue;
+    await request(`/rest/v1/task_materials?id=eq.${encodeURIComponent(material.id)}`, { method: 'DELETE' });
+    for (const path of storedPaths(material.storage_path)) {
+      if (!isManagedPath(path, 'materials')) continue;
+      try {
+        await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
+      } catch (error) {
+        console.error('Deleted-task material cleanup failed; orphan sweep will retry:', path, error);
       }
     }
-    if (materialRows.length < 1000) break;
   }
 
   const [materialPaths, submissionPaths] = await Promise.all([
