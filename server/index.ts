@@ -123,7 +123,11 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'POST', pattern: '/api/teacher/tasks/:id/cancel', run: async (params) => ({ task: await store.cancelTask(requireUser(user, 'teacher').id, params.id) }) },
     { method: 'DELETE', pattern: '/api/teacher/tasks/:id', run: async (params) => {
       const result = await store.deleteTask(requireUser(user, 'teacher').id, params.id);
-      await cloud.deleteTaskMaterials(params.id);
+      try {
+        await cloud.deleteTaskMaterials(params.id);
+      } catch (error) {
+        console.error('Task materials cleanup deferred to the daily storage sweep:', error);
+      }
       return result;
     } },
     { method: 'POST', pattern: '/api/teacher/assignments/:id/reopen', run: async (params) => ({ assignment: await store.reopenAssignment(requireUser(user, 'teacher').id, params.id) }) },
@@ -245,7 +249,8 @@ async function runCloudStorageCleanup() {
   }
 
   try {
-    const orphans = await cloud.cleanupOrphanedStorageObjects();
+    const taskIds = await store.listTaskIds();
+    const orphans = await cloud.cleanupOrphanedStorageObjects(taskIds);
     if (orphans) console.log(`Removed ${orphans} unreferenced cloud file(s).`);
   } catch (error) {
     console.error('Orphan storage cleanup failed:', error);
