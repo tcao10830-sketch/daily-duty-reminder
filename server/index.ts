@@ -121,7 +121,11 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'PATCH', pattern: '/api/teacher/tasks/:id', run: async (params) => store.updateTask(requireUser(user, 'teacher').id, params.id, body) },
     { method: 'POST', pattern: '/api/teacher/tasks/:id/duplicate', run: async (params) => ({ tasks: await store.duplicateTask(requireUser(user, 'teacher').id, params.id) }) },
     { method: 'POST', pattern: '/api/teacher/tasks/:id/cancel', run: async (params) => ({ task: await store.cancelTask(requireUser(user, 'teacher').id, params.id) }) },
-    { method: 'DELETE', pattern: '/api/teacher/tasks/:id', run: async (params) => store.deleteTask(requireUser(user, 'teacher').id, params.id) },
+    { method: 'DELETE', pattern: '/api/teacher/tasks/:id', run: async (params) => {
+      const result = await store.deleteTask(requireUser(user, 'teacher').id, params.id);
+      await cloud.deleteTaskMaterials(params.id);
+      return result;
+    } },
     { method: 'POST', pattern: '/api/teacher/assignments/:id/reopen', run: async (params) => ({ assignment: await store.reopenAssignment(requireUser(user, 'teacher').id, params.id) }) },
     { method: 'GET', pattern: '/api/student/overview', run: async () => store.studentOverview(requireUser(user, 'student').id) },
     { method: 'GET', pattern: '/api/student/tasks', run: async () => ({ assignments: await store.studentTasks(requireUser(user, 'student').id) }) },
@@ -230,14 +234,28 @@ setInterval(() => {
   cleanupExpiredPencilHistory().catch((error) => console.error('Pencil history cleanup failed:', error));
 }, 24 * 60 * 60 * 1000);
 
-// Run cloud-file retention cleanup on startup and periodically.
-// On Render's free plan the service may sleep; startup cleanup catches up after it wakes.
-cloud.cleanupExpiredSubmissions().then((count) => {
-  if (count) console.log(`Removed ${count} expired student submission(s).`);
-}).catch((error) => console.error('Submission cleanup failed:', error));
+// Run cloud-file cleanup on startup and once per day.
+// Render's free web service may sleep; startup cleanup catches up after it wakes.
+async function runCloudStorageCleanup() {
+  try {
+    const submissions = await cloud.cleanupExpiredSubmissions();
+    if (submissions) console.log(`Removed ${submissions} expired student submission(s).`);
+  } catch (error) {
+    console.error('Submission cleanup failed:', error);
+  }
+
+  try {
+    const orphans = await cloud.cleanupOrphanedStorageObjects();
+    if (orphans) console.log(`Removed ${orphans} unreferenced cloud file(s).`);
+  } catch (error) {
+    console.error('Orphan storage cleanup failed:', error);
+  }
+}
+
+void runCloudStorageCleanup();
 setInterval(() => {
-  cloud.cleanupExpiredSubmissions().catch((error) => console.error('Submission cleanup failed:', error));
-}, 6 * 60 * 60 * 1000);
+  void runCloudStorageCleanup();
+}, 24 * 60 * 60 * 1000);
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://127.0.0.1');
