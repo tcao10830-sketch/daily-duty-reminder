@@ -27,6 +27,9 @@ export type AssignmentCard = {
   recurrence: Recurrence;
   taskStatus: 'active' | 'cancelled';
   inProgress: boolean;
+  submittedAt: string | null;
+  submissionPending: boolean;
+  revisionDeadlineAt: string | null;
   completedAt: string | null;
   status: CompletionStatus;
 };
@@ -53,6 +56,7 @@ export type TaskSummary = {
   pendingCount: number;
   overdueCount: number;
   completionRate: number;
+  studentNames?: string[];
 };
 
 export type ClassSummary = {

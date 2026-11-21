@@ -1,4 +1,5 @@
 import { useEffect, type CSSProperties } from 'react';
+import { Mascot } from './Mascot';
 
 const colors = ['#FFD84D', '#FF914D', '#4F87FF', '#38C98B', '#EF8296', '#B78BFA', '#FFF2C7'];
 const particles = Array.from({ length: 132 }, (_, index) => {
@@ -47,8 +48,8 @@ export function SubmissionCelebration({ onDone }: { onDone: () => void }) {
       </div>
       <div className="celebration-message">
         <span className="celebration-sparkle" aria-hidden="true">✦</span>
-        <strong>SUBMITTED!</strong>
-        <span>Your hard work is on its way!</span>
+        <strong>ĐÃ NỘP BÀI!</strong>
+        <span>Nỗ lực của bạn đã được ghi nhận!</span>
         <span className="celebration-mini-stars" aria-hidden="true">✦　✧　✦</span>
       </div>
     </div>

@@ -68,23 +68,23 @@ export function StatusPill({ status }: { status: CompletionStatus }) {
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-extrabold ${statusClass(status)}`}>{STATUS_LABEL[status]}</span>;
 }
 
-export function Countdown({ deadlineAt, status }: { deadlineAt: string; status: CompletionStatus }) {
+export function Countdown({ deadlineAt, status, paused = false }: { deadlineAt: string; status: CompletionStatus; paused?: boolean }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-  if (status === 'on_time' || status === 'late') return null;
+  if (status === 'on_time' || status === 'late' || paused) return null;
   const diff = new Date(deadlineAt).getTime() - now;
-  if (diff <= 0) return <span className="font-extrabold text-[#EF5B68]">Deadline passed</span>;
+  if (diff <= 0) return <span className="font-extrabold text-[#EF5B68]">Đã quá hạn</span>;
   const total = Math.floor(diff / 1000);
   const days = Math.floor(total / 86400);
   const hours = Math.floor((total % 86400) / 3600);
   const mins = Math.floor((total % 3600) / 60);
   const secs = total % 60;
   const soon = diff < 3 * 60 * 60 * 1000;
-  const label = days > 0 ? `${days}d ${hours}h left` : hours > 0 ? `${hours}h ${mins}m left` : `${mins}m ${secs}s left`;
-  return <span className={soon ? 'font-extrabold text-[#EF5B68]' : 'font-bold text-[#315fbf]'}>{soon ? 'Reminder · ' : ''}{label}</span>;
+  const label = days > 0 ? `${days} ngày ${hours} giờ còn lại` : hours > 0 ? `${hours} giờ ${mins} phút còn lại` : `${mins} phút ${secs} giây còn lại`;
+  return <span className={soon ? 'font-extrabold text-[#EF5B68]' : 'font-bold text-[#315fbf]'}>{soon ? 'Nhắc nhở · ' : ''}{label}</span>;
 }
 
 export function StatCard({ label, value, tint }: { label: string; value: number | string; tint: string }) {
@@ -155,5 +155,5 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 export function Loading() {
-  return <p className="font-extrabold text-[#4F87FF]">Loading…</p>;
+  return <p className="font-extrabold text-[#4F87FF]">Đang tải…</p>;
 }

@@ -4,7 +4,7 @@ import { CalendarBoard } from '../../components/CalendarBoard';
 import { Banner, Button, Empty, Field, Loading, Ring, StatusPill, WeekBars, controlClass } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
-import { formatStamp } from '../../lib/format';
+import { formatStamp, translateNotificationBody, translateNotificationTitle } from '../../lib/format';
 import { useQuery } from '../../lib/query';
 import type { AssignmentCard, ClassSummary, NotificationItem, TaskSummary, User, WeekPoint } from '../../types';
 
@@ -37,12 +37,12 @@ export function ProgressPage() {
               <h2 className="text-xl font-extrabold">{item.name}</h2>
               <Ring value={item.completionRate} />
             </div>
-            <p className="font-bold text-slate-500">{item.completedCount} completed · {item.pendingCount} pending · {item.overdueCount} overdue</p>
+            <p className="font-bold text-slate-500">{item.completedCount} đã hoàn thành · {item.pendingCount} đang chờ · {item.overdueCount} quá hạn</p>
           </Link>
         ))}
       </section>
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-xl font-extrabold">Open a task to see each student</h2>
+        <h2 className="mb-3 text-xl font-extrabold">Mở nhiệm vụ để xem tiến độ từng học sinh</h2>
         <div className="grid gap-2">
           {tasks.map((task) => (
             <Link key={task.id} to={`/teacher/tasks/${task.id}`} className="flex items-center justify-between rounded-2xl bg-[#f7fbff] px-3 py-2 font-extrabold">
@@ -50,7 +50,7 @@ export function ProgressPage() {
               <span>{task.completedCount}/{task.assignedCount} · {task.completionRate}%</span>
             </Link>
           ))}
-          {tasks.length === 0 ? <Empty>No active tasks.</Empty> : null}
+          {tasks.length === 0 ? <Empty>Không có nhiệm vụ đang hoạt động.</Empty> : null}
         </div>
       </section>
     </div>
@@ -66,24 +66,24 @@ export function StudentProgressPage() {
     weekly: WeekPoint[];
   }>(`/api/teacher/students/${id}`);
   if (loading && !data) return <Loading />;
-  if (!data) return <Banner tone="error">{error || 'Student not found.'}</Banner>;
+  if (!data) return <Banner tone="error">{error || 'Không tìm thấy học sinh.'}</Banner>;
   return (
     <div className="grid gap-4">
       <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-sm">
         <div>
           <h1 className="text-2xl font-extrabold">{data.student.name}</h1>
           <p className="font-bold text-slate-500">{data.student.class_name} · {data.student.email}</p>
-          <p className="mt-2 font-bold">{data.stats.completed} completed · {data.stats.pending} pending · {data.stats.overdue} overdue</p>
+          <p className="mt-2 font-bold">{data.stats.completed} đã hoàn thành · {data.stats.pending} đang chờ · {data.stats.overdue} quá hạn</p>
         </div>
         <Ring value={data.stats.completionRate} />
       </section>
       <section className="rounded-3xl bg-white p-4 shadow-sm">
-        <h2 className="mb-2 font-extrabold">Weekly completions</h2>
+        <h2 className="mb-2 font-extrabold">Nhiệm vụ hoàn thành theo tuần</h2>
         <WeekBars days={data.weekly} />
       </section>
       <div className="overflow-x-auto rounded-3xl bg-white shadow-sm">
         <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="font-extrabold"><tr><th className="p-3">Task</th><th className="p-3">Status</th><th className="p-3">Completed</th></tr></thead>
+          <thead className="font-extrabold"><tr><th className="p-3">Nhiệm vụ</th><th className="p-3">Trạng thái</th><th className="p-3">Đã hoàn thành</th></tr></thead>
           <tbody>
             {data.assignments.map((row) => (
               <tr key={row.assignmentId} className="border-t">
@@ -104,24 +104,35 @@ export function NotificationsPage() {
   const { bump } = useAuth();
   if (loading && !data) return <Loading />;
   if (error) return <Banner tone="error">{error}</Banner>;
+  const removeOne = async (id: string) => {
+    if (!window.confirm('Bạn có chắc muốn xóa thông báo này không?')) return;
+    await api(`/api/notifications/${id}`, { method: 'DELETE' });
+    bump();
+  };
+  const removeAll = async () => {
+    if (!window.confirm('Bạn có chắc muốn xóa tất cả thông báo? Thao tác này không thể hoàn tác.')) return;
+    await api('/api/notifications', { method: 'DELETE' });
+    bump();
+  };
   return (
     <div className="grid gap-3">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">Notifications</h1>
-        <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Mark all read</Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-extrabold">Thông báo</h1>
+        <div className="flex gap-2">
+          <Button tone="ghost" onClick={() => void api('/api/notifications/read-all', { method: 'POST' }).then(() => bump())}>Đánh dấu đã đọc tất cả</Button>
+          <Button tone="red" onClick={() => void removeAll()}>Xóa tất cả</Button>
+        </div>
       </div>
-      {data?.notifications.length === 0 ? <Empty>No notifications yet. They appear when tasks are assigned, updated, completed, or become overdue.</Empty> : null}
+      {data?.notifications.length === 0 ? <Empty>Chưa có thông báo. Thông báo sẽ xuất hiện khi nhiệm vụ được giao, cập nhật, hoàn thành hoặc quá hạn.</Empty> : null}
       {data?.notifications.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => void api(`/api/notifications/${item.id}/read`, { method: 'POST' }).then(() => bump())}
-          className={`rounded-3xl p-4 text-left shadow-sm ${item.read ? 'bg-white' : 'bg-[#FFF3B0]'}`}
-        >
-          <p className="font-extrabold">{item.title}</p>
-          <p className="font-semibold">{item.body}</p>
-          <p className="text-xs font-bold text-slate-500">{formatStamp(item.createdAt)}</p>
-        </button>
+        <div key={item.id} className={`flex items-start gap-3 rounded-3xl p-4 shadow-sm ${item.read ? 'bg-white' : 'bg-[#FFF3B0]'}`}>
+          <button type="button" onClick={() => void api(`/api/notifications/${item.id}/read`, { method: 'POST' }).then(() => bump())} className="min-w-0 flex-1 text-left">
+            <p className="font-extrabold">{translateNotificationTitle(item.title)}</p>
+            <p className="font-semibold">{translateNotificationBody(item.body)}</p>
+            <p className="text-xs font-bold text-slate-500">{formatStamp(item.createdAt)}</p>
+          </button>
+          <button type="button" aria-label="Xóa thông báo" onClick={() => void removeOne(item.id)} className="rounded-xl bg-white/80 px-3 py-2 text-sm font-extrabold text-red-600 shadow-sm">Xóa</button>
+        </div>
       ))}
     </div>
   );
@@ -148,7 +159,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto grid max-w-xl gap-4">
-      <h1 className="text-2xl font-extrabold">Settings</h1>
+      <h1 className="text-2xl font-extrabold">Cài đặt</h1>
       {message ? <Banner tone="ok">{message}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
       <form
@@ -158,15 +169,15 @@ export function SettingsPage() {
           api<{ user: User }>('/api/me', { method: 'PATCH', body: JSON.stringify({ name }) })
             .then((result) => {
               setUser(result.user);
-              setMessage('Name saved.');
+              setMessage('Đã lưu tên.');
               bump();
             })
             .catch((err: Error) => setError(err.message));
         }}
       >
-        <Field label="Display name"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
-        <p className="text-sm font-bold text-slate-500">{user?.email} · {user?.role} · times use Asia/Ho_Chi_Minh</p>
-        <Button type="submit">Save name</Button>
+        <Field label="Tên hiển thị"><input className={controlClass} value={name} onChange={(event) => setName(event.target.value)} /></Field>
+        <p className="text-sm font-bold text-slate-500">{user?.email} · {user?.role} · giờ theo múi giờ Việt Nam</p>
+        <Button type="submit">Lưu tên</Button>
       </form>
       <form
         className="grid gap-3 rounded-3xl bg-white p-4 shadow-sm"
@@ -176,14 +187,14 @@ export function SettingsPage() {
             .then(() => {
               setCurrentPassword('');
               setNewPassword('');
-              setMessage('Password updated.');
+              setMessage('Đã cập nhật mật khẩu.');
             })
             .catch((err: Error) => setError(err.message));
         }}
       >
-        <Field label="Current password"><input className={controlClass} type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></Field>
-        <Field label="New password"><input className={controlClass} type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></Field>
-        <Button type="submit" tone="orange">Change password</Button>
+        <Field label="Mật khẩu hiện tại"><input className={controlClass} type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></Field>
+        <Field label="Mật khẩu mới"><input className={controlClass} type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></Field>
+        <Button type="submit" tone="orange">Đổi mật khẩu</Button>
       </form>
       {canManageTeachers ? (
         <form
@@ -200,20 +211,20 @@ export function SettingsPage() {
                 setTeacherName('');
                 setTeacherEmail('');
                 setTeacherPassword('');
-                setMessage('Teacher account created. They can now log in.');
+                setMessage('Đã tạo tài khoản giáo viên. Giáo viên có thể đăng nhập ngay.');
               })
               .catch((err: Error) => setError(err.message))
               .finally(() => setCreatingTeacher(false));
           }}
         >
           <div>
-            <h2 className="font-extrabold">Manage teacher accounts</h2>
-            <p className="text-sm font-bold text-slate-500">Only the first teacher can create additional teacher accounts.</p>
+            <h2 className="font-extrabold">Quản lý tài khoản giáo viên</h2>
+            <p className="text-sm font-bold text-slate-500">Chỉ giáo viên đầu tiên mới có thể tạo thêm tài khoản giáo viên.</p>
           </div>
-          <Field label="Teacher name"><input className={controlClass} value={teacherName} onChange={(event) => setTeacherName(event.target.value)} required /></Field>
-          <Field label="Teacher email"><input className={controlClass} type="email" value={teacherEmail} onChange={(event) => setTeacherEmail(event.target.value)} required /></Field>
-          <Field label="Temporary password"><input className={controlClass} type="password" minLength={6} value={teacherPassword} onChange={(event) => setTeacherPassword(event.target.value)} required /></Field>
-          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Creating…' : 'Create teacher account'}</Button>
+          <Field label="Tên giáo viên"><input className={controlClass} value={teacherName} onChange={(event) => setTeacherName(event.target.value)} required /></Field>
+          <Field label="Email giáo viên"><input className={controlClass} type="email" value={teacherEmail} onChange={(event) => setTeacherEmail(event.target.value)} required /></Field>
+          <Field label="Mật khẩu tạm thời"><input className={controlClass} type="password" minLength={6} value={teacherPassword} onChange={(event) => setTeacherPassword(event.target.value)} required /></Field>
+          <Button type="submit" disabled={creatingTeacher}>{creatingTeacher ? 'Đang tạo…' : 'Tạo tài khoản giáo viên'}</Button>
         </form>
       ) : null}
     </div>

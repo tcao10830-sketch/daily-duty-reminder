@@ -2,6 +2,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { extname, join, normalize, relative, sep } from 'node:path';
 import { jwtSecret } from './db.ts';
+import { getPushPublicKey, savePushSubscription, removePushSubscription } from './push.ts';
 import { readToken, signToken } from './auth.ts';
 import { HttpError } from './errors.ts';
 import { subscribe } from './events.ts';
@@ -10,6 +11,7 @@ import { sweepDeadlines } from './store.ts';
 import * as store from './store.ts';
 import * as cloud from './supabase.ts';
 import { getTeacherAssignment } from './access.ts';
+import { adjustStudentPencils, awardQualityPencils, cleanupExpiredPencilHistory, resetStudentStreak, resolveStreakReview, saveEarlyRewardRules, studentRewards, teacherRewards } from './rewards.ts';
 
 const port = Number(process.env.PORT ?? 8787);
 const dev = process.env.DEV === '1';
@@ -30,14 +32,14 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     size += buffer.length;
-    if (size > 15_000_000) throw new HttpError(413, 'Request is too large. Each uploaded file must be 10 MB or smaller.');
+    if (size > 15_000_000) throw new HttpError(413, 'Yêu cầu quá lớn. Mỗi tệp tải lên không được vượt quá 10 MB.');
     chunks.push(buffer);
   }
   if (!chunks.length) return {};
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
   } catch {
-    throw new HttpError(400, 'Request body must be JSON.');
+    throw new HttpError(400, 'Dữ liệu gửi lên phải có định dạng JSON.');
   }
 }
 
@@ -63,8 +65,8 @@ async function currentUser(req: IncomingMessage) {
 }
 
 function requireUser(user: store.PublicUser | null, role?: store.Role): store.PublicUser {
-  if (!user) throw new HttpError(401, 'Please log in.');
-  if (role && user.role !== role) throw new HttpError(403, 'You cannot open that page.');
+  if (!user) throw new HttpError(401, 'Vui lòng đăng nhập.');
+  if (role && user.role !== role) throw new HttpError(403, 'Bạn không có quyền truy cập trang này.');
   return user;
 }
 
@@ -97,6 +99,13 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'PATCH', pattern: '/api/teacher/students/:id', run: async (params) => ({ student: await store.updateStudent(requireUser(user, 'teacher').id, params.id, body) }) },
     { method: 'DELETE', pattern: '/api/teacher/students/:id', run: async (params) => store.deleteStudent(requireUser(user, 'teacher').id, params.id) },
     { method: 'GET', pattern: '/api/teacher/students/:id', run: async (params) => store.studentProgress(requireUser(user, 'teacher').id, params.id) },
+    { method: 'POST', pattern: '/api/teacher/reports/preview', run: async () => store.teacherStudentReports(requireUser(user, 'teacher').id, body as { classId: unknown; studentIds: unknown; from: unknown; to: unknown }) },
+    { method: 'GET', pattern: '/api/teacher/rewards', run: async () => teacherRewards(requireUser(user, 'teacher').id) },
+    { method: 'PUT', pattern: '/api/teacher/rewards/early-rules', run: async () => saveEarlyRewardRules(requireUser(user, 'teacher').id, body.rules) },
+    { method: 'POST', pattern: '/api/teacher/rewards/students/:id/adjust', run: async (params) => adjustStudentPencils(requireUser(user, 'teacher').id, params.id, body.amount, body.note) },
+    { method: 'POST', pattern: '/api/teacher/rewards/students/:id/streak-reset', run: async (params) => resetStudentStreak(requireUser(user, 'teacher').id, params.id) },
+    { method: 'POST', pattern: '/api/teacher/rewards/streaks/:id/decision', run: async (params) => resolveStreakReview(requireUser(user, 'teacher').id, params.id, body.decision) },
+    { method: 'GET', pattern: '/api/student/rewards', run: async () => studentRewards(requireUser(user, 'student').id) },
     { method: 'GET', pattern: '/api/teacher/tasks', run: async () => ({ tasks: await store.listTeacherTasks(requireUser(user, 'teacher').id) }) },
     { method: 'POST', pattern: '/api/teacher/tasks', run: async () => ({ tasks: await store.createTask(requireUser(user, 'teacher').id, { ...body, studentIds: undefined }) }) },
     { method: 'GET', pattern: '/api/teacher/tasks/:id', run: async (params) => store.getTeacherTask(requireUser(user, 'teacher').id, params.id) },
@@ -112,7 +121,15 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
     { method: 'PATCH', pattern: '/api/teacher/tasks/:id', run: async (params) => store.updateTask(requireUser(user, 'teacher').id, params.id, body) },
     { method: 'POST', pattern: '/api/teacher/tasks/:id/duplicate', run: async (params) => ({ tasks: await store.duplicateTask(requireUser(user, 'teacher').id, params.id) }) },
     { method: 'POST', pattern: '/api/teacher/tasks/:id/cancel', run: async (params) => ({ task: await store.cancelTask(requireUser(user, 'teacher').id, params.id) }) },
-    { method: 'DELETE', pattern: '/api/teacher/tasks/:id', run: async (params) => store.deleteTask(requireUser(user, 'teacher').id, params.id) },
+    { method: 'DELETE', pattern: '/api/teacher/tasks/:id', run: async (params) => {
+      const result = await store.deleteTask(requireUser(user, 'teacher').id, params.id);
+      try {
+        await cloud.deleteTaskMaterials(params.id);
+      } catch (error) {
+        console.error('Task materials cleanup deferred to the daily storage sweep:', error);
+      }
+      return result;
+    } },
     { method: 'POST', pattern: '/api/teacher/assignments/:id/reopen', run: async (params) => ({ assignment: await store.reopenAssignment(requireUser(user, 'teacher').id, params.id) }) },
     { method: 'GET', pattern: '/api/student/overview', run: async () => store.studentOverview(requireUser(user, 'student').id) },
     { method: 'GET', pattern: '/api/student/tasks', run: async () => ({ assignments: await store.studentTasks(requireUser(user, 'student').id) }) },
@@ -131,7 +148,9 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       const student = requireUser(user, 'student');
       const assignment = await store.studentTask(student.id, params.id);
       const expiresAt = new Date(new Date(assignment.deadlineAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      return { submission: await cloud.createSubmission(params.id, student.id, body, expiresAt) };
+      const submission = await cloud.createSubmission(params.id, student.id, body, expiresAt);
+      await store.markAssignmentSubmitted(student.id, assignment.assignmentId, submission.created_at || new Date().toISOString());
+      return { submission };
     } },
     { method: 'GET', pattern: '/api/teacher/assignments/:id/submissions', run: async (params) => {
       const teacher = requireUser(user, 'teacher');
@@ -143,17 +162,28 @@ async function dispatch(method: string, path: string, body: Record<string, unkno
       const submission = await cloud.getSubmission(params.id);
       const assignment = await getTeacherAssignment(teacher.id, submission.assignment_id);
       const status = String(body.status);
-      if (status !== 'approved' && status !== 'revision_requested') throw new HttpError(400, 'Choose approve or request changes.');
+      if (status !== 'approved' && status !== 'revision_requested') throw new HttpError(400, 'Hãy chọn duyệt bài hoặc yêu cầu chỉnh sửa.');
       const review = await cloud.reviewSubmission(params.id, teacher.id, status, String(body.feedback || ''));
       if (status === 'approved') {
-        await store.completeAssignmentAt(assignment.studentId, assignment.assignmentId, new Date().toISOString());
+        await store.completeAssignmentAt(assignment.studentId, assignment.assignmentId, submission.created_at);
+        await awardQualityPencils(teacher.id, assignment.assignmentId, body.qualityPencils ?? 0);
+        if (Number(body.qualityPencils ?? 0) > 0) {
+          await store.notifySubmissionReview(assignment.studentId, assignment.assignmentId, true);
+        }
+      } else {
+        await store.requestAssignmentRevision(teacher.id, assignment.assignmentId, review.review.created_at || new Date().toISOString());
       }
       return { review };
     } },
     { method: 'POST', pattern: '/api/student/assignments/:id/start', run: async (params) => ({ assignment: await store.startAssignment(requireUser(user, 'student').id, params.id) }) },
+    { method: 'GET', pattern: '/api/push/public-key', run: async () => getPushPublicKey() },
+    { method: 'POST', pattern: '/api/push/subscribe', run: async () => savePushSubscription(requireUser(user).id, body.subscription) },
+    { method: 'POST', pattern: '/api/push/unsubscribe', run: async () => removePushSubscription(requireUser(user).id, body.endpoint) },
     { method: 'GET', pattern: '/api/notifications', run: async () => store.listNotifications(requireUser(user).id) },
     { method: 'POST', pattern: '/api/notifications/:id/read', run: async (params) => store.markRead(requireUser(user).id, params.id) },
     { method: 'POST', pattern: '/api/notifications/read-all', run: async () => store.markAllRead(requireUser(user).id) },
+    { method: 'DELETE', pattern: '/api/notifications/:id', run: async (params) => store.deleteNotification(requireUser(user).id, params.id) },
+    { method: 'DELETE', pattern: '/api/notifications', run: async () => store.deleteAllNotifications(requireUser(user).id) },
     { method: 'GET', pattern: '/api/health', run: async () => ({ ok: true }) },
   ];
 
@@ -199,14 +229,38 @@ setInterval(() => {
   sweepDeadlines().catch((error) => console.error(error));
 }, 60_000);
 
-// Run cloud-file retention cleanup on startup and periodically.
-// On Render's free plan the service may sleep; startup cleanup catches up after it wakes.
-cloud.cleanupExpiredSubmissions().then((count) => {
-  if (count) console.log(`Removed ${count} expired student submission(s).`);
-}).catch((error) => console.error('Submission cleanup failed:', error));
+// Keep the student-facing pencil history to the most recent 30 days.
+// Lifetime pencil balances and reward idempotency records are stored separately.
+cleanupExpiredPencilHistory().then((count) => {
+  if (count) console.log(`Removed ${count} expired pencil-history row(s).`);
+}).catch((error) => console.error('Pencil history cleanup failed:', error));
 setInterval(() => {
-  cloud.cleanupExpiredSubmissions().catch((error) => console.error('Submission cleanup failed:', error));
-}, 6 * 60 * 60 * 1000);
+  cleanupExpiredPencilHistory().catch((error) => console.error('Pencil history cleanup failed:', error));
+}, 24 * 60 * 60 * 1000);
+
+// Run cloud-file cleanup on startup and once per day.
+// Render's free web service may sleep; startup cleanup catches up after it wakes.
+async function runCloudStorageCleanup() {
+  try {
+    const submissions = await cloud.cleanupExpiredSubmissions();
+    if (submissions) console.log(`Removed ${submissions} expired student submission(s).`);
+  } catch (error) {
+    console.error('Submission cleanup failed:', error);
+  }
+
+  try {
+    const taskIds = await store.listTaskIds();
+    const orphans = await cloud.cleanupOrphanedStorageObjects(taskIds);
+    if (orphans) console.log(`Removed ${orphans} unreferenced cloud file(s).`);
+  } catch (error) {
+    console.error('Orphan storage cleanup failed:', error);
+  }
+}
+
+void runCloudStorageCleanup();
+setInterval(() => {
+  void runCloudStorageCleanup();
+}, 24 * 60 * 60 * 1000);
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://127.0.0.1');
@@ -215,7 +269,7 @@ const server = createServer(async (req, res) => {
       const payload = readToken(url.searchParams.get('token') ?? '', jwtSecret);
       const account = payload ? await store.getUser(payload.sub) : null;
       if (!account) {
-        send(res, 401, { error: 'Please log in.' });
+        send(res, 401, { error: 'Vui lòng đăng nhập.' });
         return;
       }
       res.writeHead(200, {
@@ -240,7 +294,7 @@ const server = createServer(async (req, res) => {
         serveStatic(req, res, url.pathname);
         return;
       }
-      send(res, 404, { error: 'Not found.' });
+      send(res, 404, { error: 'Không tìm thấy nội dung yêu cầu.' });
       return;
     }
 
@@ -248,7 +302,7 @@ const server = createServer(async (req, res) => {
     const user = await currentUser(req);
     const result = await dispatch(req.method ?? 'GET', url.pathname, body, user);
     if (result == null) {
-      send(res, 404, { error: 'Not found.' });
+      send(res, 404, { error: 'Không tìm thấy nội dung yêu cầu.' });
       return;
     }
     send(res, 200, result);
@@ -258,7 +312,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     console.error(error);
-    if (!res.headersSent) send(res, 500, { error: 'Something went wrong.' });
+    if (!res.headersSent) send(res, 500, { error: 'Đã xảy ra lỗi. Vui lòng thử lại.' });
   }
 });
 

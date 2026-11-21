@@ -2,7 +2,21 @@ import { randomUUID } from 'node:crypto';
 import { HttpError } from './errors.ts';
 
 const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'task-files';
+const databaseSnapshotBucket = process.env.SUPABASE_DATABASE_BUCKET || 'app-database-backups';
 const maxBytes = 10 * 1024 * 1024;
+
+function assertTaskStorageBucket() {
+  if (bucket === databaseSnapshotBucket) {
+    throw new Error('Refusing to run task-file cleanup against the database backup bucket.');
+  }
+}
+
+function isManagedPath(path: string, prefix: 'materials' | 'submissions') {
+  const parts = path.split('/');
+  return parts[0] === prefix &&
+    parts.length >= 2 &&
+    parts.slice(1).every((part) => Boolean(part) && part !== '.' && part !== '..' && !part.includes(String.fromCharCode(92)));
+}
 
 type StoredFile = {
   id: string;
@@ -11,6 +25,7 @@ type StoredFile = {
   student_id?: string;
   teacher_id?: string;
   file_name: string;
+  display_name?: string | null;
   storage_path: string | null;
   mime_type: string | null;
   size_bytes: number;
@@ -47,6 +62,83 @@ async function request(path: string, init: RequestInit = {}) {
     throw new HttpError(502, 'Cloud storage could not complete the request. Check the Supabase setup.');
   }
   return data;
+}
+
+const databaseSnapshotPath = '_system/duty.sqlite.gz';
+
+function storageAuthHeaders(key: string, legacy: boolean): Record<string, string> {
+  return {
+    apikey: key,
+    ...(legacy ? { Authorization: `Bearer ${key}` } : {}),
+  };
+}
+
+/** Download the last durable SQLite snapshot before the app opens its local database. */
+export async function downloadDatabaseSnapshot(): Promise<Buffer | null> {
+  const { url, key, legacy } = config();
+  const objectPath = databaseSnapshotPath.split('/').map(encodeURIComponent).join('/');
+  const response = await fetch(`${url}/storage/v1/object/${databaseSnapshotBucket}/${objectPath}`, {
+    headers: storageAuthHeaders(key, legacy),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    if (response.status === 404 || (response.status === 400 && /object not found|not_found|404/i.test(detail))) return null;
+    console.error('Database snapshot download failed:', response.status, detail.slice(0, 500));
+    throw new Error('Could not restore the application database from cloud storage.');
+  }
+  return Buffer.from(await response.arrayBuffer());
+}
+
+/** Save a compressed, consistent SQLite snapshot to private Supabase Storage. */
+export async function uploadDatabaseSnapshot(snapshot: Buffer): Promise<void> {
+  const { url, key, legacy } = config();
+  const objectPath = databaseSnapshotPath.split('/').map(encodeURIComponent).join('/');
+  const response = await fetch(`${url}/storage/v1/object/${databaseSnapshotBucket}/${objectPath}`, {
+    method: 'POST',
+    headers: {
+      ...storageAuthHeaders(key, legacy),
+      'Content-Type': 'application/gzip',
+      'x-upsert': 'true',
+      'Cache-Control': 'no-store',
+    },
+    body: snapshot as unknown as BodyInit,
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    console.error('Database snapshot upload failed:', response.status, detail.slice(0, 500));
+    throw new Error('Could not save the application database to cloud storage.');
+  }
+}
+
+/** One-time import of the existing core tables when no cloud snapshot exists yet. */
+export async function loadLegacyDatabaseRows(): Promise<Record<string, Record<string, unknown>[]>> {
+  const tables = [
+    'users',
+    'classes',
+    'class_members',
+    'tasks',
+    'task_assignments',
+    'task_completions',
+    'notifications',
+  ];
+  const entries = await Promise.all(tables.map(async (table) => {
+    const rows: Record<string, unknown>[] = [];
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+      const result = await request(`/rest/v1/${table}?select=*`, {
+        method: 'GET',
+        headers: {
+          'Range-Unit': 'items',
+          Range: `${offset}-${offset + pageSize - 1}`,
+        },
+      });
+      const page = Array.isArray(result) ? result as Record<string, unknown>[] : [];
+      rows.push(...page);
+      if (page.length < pageSize) break;
+    }
+    return [table, rows] as const;
+  }));
+  return Object.fromEntries(entries);
 }
 
 function safeName(name: string) {
@@ -166,6 +258,7 @@ export async function createMaterial(taskId: string, teacherId: string, body: Re
     task_id: taskId,
     teacher_id: teacherId,
     file_name: file?.name || String(body.label || 'Reference link').slice(0, 160),
+    display_name: String(body.displayName || body.label || file?.name || 'Tài liệu tham khảo').trim().slice(0, 160),
     storage_path: file?.path || null,
     mime_type: file?.mime || null,
     size_bytes: file?.size || 0,
@@ -185,6 +278,7 @@ export async function createSubmission(assignmentId: string, studentId: string, 
     assignment_id: assignmentId,
     student_id: studentId,
     file_name: files.length ? JSON.stringify(files.map((item) => item.name)) : String(body.label || 'Submitted link').slice(0, 160),
+    display_name: String(body.displayName || (files.length ? 'Bài nộp' : 'Đường dẫn bài nộp')).trim().slice(0, 160),
     storage_path: files.length ? JSON.stringify(files.map((item) => item.path)) : null,
     mime_type: files.length ? JSON.stringify(files.map((item) => item.mime)) : null,
     size_bytes: total,
@@ -229,15 +323,171 @@ export async function reviewSubmission(submissionId: string, teacherId: string, 
 
 
 export async function cleanupExpiredSubmissions() {
+  assertTaskStorageBucket();
   const expired = await rows('assignment_submissions', `expires_at=lte.${encodeURIComponent(new Date().toISOString())}&select=id,storage_path`);
   let removed = 0;
   for (const item of expired) {
     const paths = storedPaths(item.storage_path);
+    // Never allow a malformed database path to point cleanup outside the submissions folder.
+    if (paths.some((path) => !isManagedPath(path, 'submissions'))) {
+      console.error('Skipping expired submission with an unexpected storage path:', item.id);
+      continue;
+    }
+    // Keep the database row if any file deletion fails so the next sweep can retry safely.
     for (const path of paths) {
       await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
     }
     await request(`/rest/v1/assignment_submissions?id=eq.${encodeURIComponent(item.id)}`, { method: 'DELETE' });
     removed += 1;
+  }
+  return removed;
+}
+
+/** Remove a task's material records and their files. The separate backup bucket is never touched. */
+export async function deleteTaskMaterials(taskId: string): Promise<number> {
+  assertTaskStorageBucket();
+  const items = await rows('task_materials', `task_id=eq.${encodeURIComponent(taskId)}&select=id,storage_path`);
+  // Remove references first. If Storage is temporarily unavailable, the orphan sweep can retry later.
+  await request(`/rest/v1/task_materials?task_id=eq.${encodeURIComponent(taskId)}`, { method: 'DELETE' });
+  for (const item of items) {
+    for (const path of storedPaths(item.storage_path)) {
+      if (!isManagedPath(path, 'materials')) {
+        console.error('Skipping task material with an unexpected storage path:', item.id);
+        continue;
+      }
+      try {
+        await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
+      } catch (error) {
+        console.error('Task material file cleanup failed; orphan sweep will retry:', path, error);
+      }
+    }
+  }
+  return items.length;
+}
+
+type StorageListEntry = {
+  name: string;
+  id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+/** Recursively list objects under an app-owned folder in task-files. */
+async function listStorageFiles(prefix: 'materials' | 'submissions') {
+  const pending = [`${prefix}/`];
+  const visited = new Set<string>();
+  const files: { path: string; createdAt: string | null }[] = [];
+
+  while (pending.length) {
+    const current = pending.shift()!;
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    for (let offset = 0; ; offset += 100) {
+      const page = await request(`/storage/v1/object/list/${bucket}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prefix: current,
+          limit: 100,
+          offset,
+          sortBy: { column: 'name', order: 'asc' },
+        }),
+      }) as StorageListEntry[];
+
+      if (!Array.isArray(page) || page.length === 0) break;
+      for (const entry of page) {
+        if (!entry?.name || entry.name === '.' || entry.name === '..') continue;
+        const path = `${current}${entry.name}`;
+        if (entry.id == null) {
+          const folderPath = `${path}/`;
+          if (!visited.has(folderPath)) pending.push(folderPath);
+        } else {
+          files.push({ path, createdAt: entry.created_at || entry.updated_at || null });
+        }
+      }
+      if (page.length < 100) break;
+    }
+  }
+
+  return files;
+}
+
+async function referencedStoragePaths(table: 'task_materials' | 'assignment_submissions') {
+  const referenced = new Set<string>();
+  for (let offset = 0; ; offset += 1000) {
+    const page = await request(`/rest/v1/${table}?select=storage_path`, {
+      method: 'GET',
+      headers: {
+        'Range-Unit': 'items',
+        Range: `${offset}-${offset + 999}`,
+      },
+    }) as { storage_path: string | null }[];
+    if (!Array.isArray(page)) break;
+    for (const row of page) {
+      for (const path of storedPaths(row.storage_path)) referenced.add(path);
+    }
+    if (page.length < 1000) break;
+  }
+  return referenced;
+}
+
+/**
+ * Delete only unreferenced app uploads older than seven days.
+ * A grace period protects files between upload and database-record creation.
+ * This scans task-files/materials and task-files/submissions only; it never lists or deletes backups.
+ */
+export async function cleanupOrphanedStorageObjects(activeTaskIds: string[]): Promise<number> {
+  assertTaskStorageBucket();
+  const activeTasks = new Set(activeTaskIds);
+
+  // A task may have been deleted while Supabase was unavailable. Collect all
+  // material rows before deleting any so offset pagination cannot skip records.
+  const allMaterials: { id: string; task_id: string; storage_path: string | null }[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const page = await request('/rest/v1/task_materials?select=id,task_id,storage_path', {
+      method: 'GET',
+      headers: { 'Range-Unit': 'items', Range: `${offset}-${offset + 999}` },
+    }) as { id: string; task_id: string; storage_path: string | null }[];
+    if (!Array.isArray(page) || page.length === 0) break;
+    allMaterials.push(...page);
+    if (page.length < 1000) break;
+  }
+  for (const material of allMaterials) {
+    if (activeTasks.has(material.task_id)) continue;
+    await request(`/rest/v1/task_materials?id=eq.${encodeURIComponent(material.id)}`, { method: 'DELETE' });
+    for (const path of storedPaths(material.storage_path)) {
+      if (!isManagedPath(path, 'materials')) continue;
+      try {
+        await request(`/storage/v1/object/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
+      } catch (error) {
+        console.error('Deleted-task material cleanup failed; orphan sweep will retry:', path, error);
+      }
+    }
+  }
+
+  const [materialPaths, submissionPaths] = await Promise.all([
+    referencedStoragePaths('task_materials'),
+    referencedStoragePaths('assignment_submissions'),
+  ]);
+  const referenced = new Set([...materialPaths, ...submissionPaths]);
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  let removed = 0;
+
+  for (const prefix of ['materials', 'submissions'] as const) {
+    const files = await listStorageFiles(prefix);
+    for (const file of files) {
+      if (referenced.has(file.path)) continue;
+      const createdAt = file.createdAt ? Date.parse(file.createdAt) : NaN;
+      // If Storage doesn't provide a trustworthy timestamp, leave the object untouched.
+      if (!Number.isFinite(createdAt) || createdAt > cutoff) continue;
+      try {
+        await request(`/storage/v1/object/${bucket}/${file.path.split('/').map(encodeURIComponent).join('/')}`, { method: 'DELETE' });
+        removed += 1;
+      } catch (error) {
+        console.error('Orphan storage cleanup failed; will retry next run:', file.path, error);
+      }
+    }
   }
   return removed;
 }

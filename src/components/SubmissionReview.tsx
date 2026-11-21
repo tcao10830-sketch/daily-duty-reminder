@@ -7,6 +7,7 @@ import { useQuery } from '../lib/query';
 type Submission = {
   id: string;
   file_name: string;
+  display_name?: string | null;
   files?: { file_name: string; signedUrl: string | null }[];
   signedUrl: string | null;
   link_url: string | null;
@@ -19,6 +20,7 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
   const { data, error, loading } = useQuery<{ submissions: Submission[] }>(`/api/teacher/assignments/${assignmentId}/submissions`);
   const { bump } = useAuth();
   const [feedback, setFeedback] = useState('');
+  const [qualityPencils, setQualityPencils] = useState('0');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   if (loading && !data) return <Loading />;
@@ -31,13 +33,14 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
     try {
       await api(`/api/teacher/submissions/${submissionId}/review`, {
         method: 'POST',
-        body: JSON.stringify({ status, feedback }),
+        body: JSON.stringify({ status, feedback, qualityPencils: status === 'approved' ? Number(qualityPencils) : 0 }),
       });
       setFeedback('');
-      setMessage(status === 'approved' ? 'Submission approved.' : 'Revision requested.');
+      setQualityPencils('0');
+      setMessage(status === 'approved' ? 'Đã duyệt bài nộp.' : 'Đã yêu cầu chỉnh sửa bài.');
       bump();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Could not save review.');
+      setMessage(err instanceof Error ? err.message : 'Không thể lưu đánh giá.');
     } finally {
       setBusy(false);
     }
@@ -45,8 +48,9 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
 
   return (
     <div className="min-w-[220px] space-y-2">
-      {items.length === 0 ? <span className="text-xs font-semibold text-slate-400">No submission yet</span> : items.map((item) => (
+      {items.length === 0 ? <span className="text-xs font-semibold text-slate-400">Chưa có bài nộp</span> : items.map((item) => (
         <div key={item.id} className="rounded-xl bg-[#f7f9fc] p-2">
+          {item.display_name ? <p className="mb-2 rounded-lg bg-[#FFF3B0] px-2 py-1.5 text-sm font-extrabold text-[#34445e]">Tên hiển thị: {item.display_name}</p> : null}
           <div className="grid gap-1">
             {(item.files?.length ? item.files : [{ file_name: item.file_name, signedUrl: item.signedUrl }]).map((file, index) => (
               <a key={`${file.file_name}-${index}`} className="break-all text-sm font-extrabold text-[#315fc4] underline" href={file.signedUrl || item.link_url || '#'} target="_blank" rel="noreferrer">
@@ -62,17 +66,20 @@ export function SubmissionReview({ assignmentId }: { assignmentId: string }) {
             </p>
           ) : (
             <div className="mt-2 space-y-2">
-              <textarea className="w-full rounded-lg border p-2 text-xs" rows={2} placeholder="Feedback (optional)" value={feedback} onChange={(event) => setFeedback(event.target.value)} />
+              <textarea className="w-full rounded-lg border p-2 text-xs" rows={2} placeholder="Nhận xét (không bắt buộc)" value={feedback} onChange={(event) => setFeedback(event.target.value)} />
+              <label className="grid gap-1 text-xs font-extrabold text-slate-600">Quality reward (pencils, optional)
+                <input className="w-24 rounded-lg border p-2" type="number" min="0" max="100" value={qualityPencils} onChange={(event) => setQualityPencils(event.target.value)} />
+              </label>
               <div className="flex flex-wrap gap-1">
-                <Button tone="green" disabled={busy} onClick={() => void review(item.id, 'approved')}>Approve</Button>
-                <Button tone="orange" disabled={busy} onClick={() => void review(item.id, 'revision_requested')}>Request revision</Button>
+                <Button tone="green" disabled={busy} onClick={() => void review(item.id, 'approved')}>Duyệt bài</Button>
+                <Button tone="orange" disabled={busy} onClick={() => void review(item.id, 'revision_requested')}>Yêu cầu chỉnh sửa</Button>
               </div>
             </div>
           )}
         </div>
       ))}
       {message ? <p className="text-xs font-bold text-slate-600">{message}</p> : null}
-      {items.length > 0 && items.every((item) => item.review?.status === 'approved') ? <Empty>All submitted work approved.</Empty> : null}
+      {items.length > 0 && items.every((item) => item.review?.status === 'approved') ? <Empty>Tất cả bài đã nộp đều được duyệt.</Empty> : null}
     </div>
   );
 }

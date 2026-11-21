@@ -4,7 +4,7 @@ body {
   margin: 0;
   min-height: 100vh;
   color: #24324a;
-  font-family: "Nunito", "Segoe UI", sans-serif;
+  font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
   background:
     radial-gradient(circle at 1px 1px, rgba(79, 135, 255, 0.16) 1px, transparent 0) 0 0 / 22px 22px,
     linear-gradient(165deg, #fff8e8 0%, #dff4ff 100%);
@@ -12,7 +12,7 @@ body {
 
 button, input, select, textarea { font-family: inherit; }
 
-.font-display { font-family: "Coiny", "Nunito", cursive; }
+.font-display { font-family: "Be Vietnam Pro", sans-serif; }
 
 .note-pin {
   position: absolute;
@@ -305,9 +305,14 @@ button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
   text-align: center;
   animation: celebration-card-pop .42s cubic-bezier(.2,1.35,.4,1) both;
 }
+.celebration-mascot {
+  margin: -4px 0 1px;
+  filter: drop-shadow(0 7px 8px rgba(111,83,33,.14));
+  animation: celebration-mascot-pop .7s cubic-bezier(.2,1.35,.4,1) .12s both, celebration-mascot-float 1.8s ease-in-out .82s infinite;
+}
 .celebration-message strong {
   color: #315fbf;
-  font-family: "Coiny", "Nunito", cursive;
+  font-family: "Be Vietnam Pro", sans-serif;
   font-size: clamp(2rem, 8vw, 3.25rem);
   line-height: 1;
   letter-spacing: .025em;
@@ -340,6 +345,14 @@ button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
     transform: translate(calc(-50% + var(--burst-x)), calc(-50% + var(--burst-y))) scale(.72) rotate(var(--burst-spin));
   }
 }
+@keyframes celebration-mascot-pop {
+  from { opacity: 0; transform: translateY(15px) scale(.55) rotate(-12deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+@keyframes celebration-mascot-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+}
 @keyframes celebration-card-pop {
   from { opacity: 0; transform: translateY(9px) scale(.78); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -357,8 +370,88 @@ button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
   .celebration-message > span:nth-child(3) { font-size: .88rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .burst-particle, .celebration-message, .celebration-sparkle {
+  .burst-particle, .celebration-message, .celebration-sparkle, .celebration-mascot {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+
+/* Login / registration stationery accents */
+.auth-page { position: relative; isolation: isolate; }
+.auth-stage { padding-top: 8px; }
+.auth-brand {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 2px;
+  font-weight: 900;
+  letter-spacing: -.045em;
+  line-height: 1.12;
+  text-shadow: 0 2px 0 rgba(255,255,255,.9), 0 4px 0 rgba(255,145,77,.12);
+}
+.auth-panel {
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 18px 42px rgba(55,75,110,.11), 0 5px 0 rgba(255,255,255,.7);
+  backdrop-filter: blur(8px);
+}
+.auth-decor {
+  position: absolute;
+  z-index: 0;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 7px 7px rgba(47,61,85,.13));
+}
+.auth-book {
+  top: 94px;
+  right: -13px;
+  font-size: 48px;
+  transform: rotate(12deg);
+  animation: auth-float 4.2s ease-in-out infinite;
+}
+.auth-pencil {
+  right: 4px;
+  bottom: 27px;
+  font-size: 38px;
+  transform: rotate(24deg);
+  animation: auth-float 3.7s ease-in-out .4s infinite;
+}
+.auth-note {
+  top: 160px;
+  left: -19px;
+  display: grid;
+  gap: 2px;
+  width: 105px;
+  padding: 10px 9px 8px;
+  border: 1px solid rgba(218,181,59,.45);
+  border-radius: 4px 13px 5px 12px;
+  background: linear-gradient(145deg,#fff5a9,#ffe78a);
+  color: #72551e;
+  transform: rotate(-8deg);
+  box-shadow: 0 6px 0 rgba(202,164,54,.12), 0 10px 18px rgba(47,61,85,.1);
+}
+.auth-note span { font-size: 10px; font-weight: 800; opacity: .72; }
+.auth-note b { font-size: 12px; line-height: 1.25; font-weight: 900; }
+.auth-note i { font-size: 10px; font-style: normal; letter-spacing: 3px; color: #ef9148; }
+.auth-paperclip {
+  top: 73px;
+  left: 18px;
+  color: #83a9ed;
+  font-size: 44px;
+  font-weight: 900;
+  transform: rotate(70deg);
+}
+@keyframes auth-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -7px; }
+}
+@media (max-width: 640px) {
+  .auth-page { padding-top: 30px; padding-bottom: 30px; }
+  .auth-brand { font-size: 2rem; }
+  .auth-book { top: 96px; right: -5px; font-size: 39px; }
+  .auth-note { top: 170px; left: -8px; width: 91px; padding: 8px; }
+  .auth-pencil { right: -3px; bottom: 23px; font-size: 32px; }
+  .auth-paperclip { top: 76px; left: 8px; font-size: 35px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-book, .auth-pencil { animation: none !important; }
 }
