@@ -44,44 +44,6 @@ export function StudentHomePage() {
           <Mascot size={132} pose="encourage" />
         </div>
       </section>
-      <a
-        href="https://rung-chuong-vang-2libbx0x9-cao-the-anh.vercel.app/"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Mở ứng dụng Rung Chuông Vàng trong tab mới"
-        className="group block overflow-hidden rounded-[28px] border border-white/90 bg-white shadow-[0_12px_32px_rgba(54,75,111,.10)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(54,75,111,.16)]"
-      >
-        <div className="relative aspect-[16/7] overflow-hidden bg-gradient-to-br from-[#fff6c8] via-[#fff8e8] to-[#dff4ff]">
-          <div className="absolute inset-0 grid place-items-center text-center">
-            <div>
-              <div className="text-5xl">🔔</div>
-              <p className="mt-2 font-black text-[#24304a]">RUNG CHUÔNG VÀNG</p>
-              <p className="text-xs font-bold text-[#64748b]">Sẵn sàng thử sức chưa?</p>
-            </div>
-          </div>
-          <iframe
-            src="https://rung-chuong-vang-2libbx0x9-cao-the-anh.vercel.app/"
-            title="Xem trước trang chủ Rung Chuông Vàng"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            tabIndex={-1}
-            aria-hidden="true"
-            sandbox="allow-scripts allow-same-origin"
-            className="pointer-events-none absolute left-0 top-0 h-[200%] w-[200%] origin-top-left scale-50 border-0"
-          />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-[#172554]/90 via-[#172554]/35 to-transparent px-4 pb-3 pt-12 sm:px-6 sm:pb-4">
-            <div className="text-left text-white">
-              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#ffe27a]">Ứng dụng học tập</p>
-              <h2 className="mt-1 font-display text-xl font-black sm:text-2xl">Rung Chuông Vàng</h2>
-              <p className="mt-0.5 text-xs font-bold text-white/85 sm:text-sm">Ôn luyện kiến thức · Chinh phục từng vòng chơi</p>
-            </div>
-            <span className="shrink-0 rounded-full bg-[#ffd84d] px-4 py-2 text-xs font-black text-[#24304a] shadow-lg transition group-hover:scale-105 sm:text-sm">
-              Mở ứng dụng ↗
-            </span>
-          </div>
-          <span className="absolute right-3 top-3 rounded-full border border-white/70 bg-white/85 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#315fbf] shadow-sm">Xem trước trang chủ</span>
-        </div>
-      </a>
       {rewards.data?.streakStatus === 'threatened' ? (
         <section className="rounded-3xl border-2 border-red-300 bg-red-50 p-4 text-red-800 shadow-sm">
           <p className="font-extrabold">⚠ Chuỗi thành tích của bạn đang có nguy cơ bị gián đoạn!</p>
