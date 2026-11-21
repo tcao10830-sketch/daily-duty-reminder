@@ -92,6 +92,11 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+/** Return task IDs from the durable app database for cloud-material orphan checks. */
+export function listTaskIds(): Promise<string[]> {
+  return withDb(() => (db.prepare('SELECT id FROM tasks').all() as { id: string }[]).map((row) => row.id));
+}
+
 function clean(value: unknown, max: number): string {
   return String(value ?? '').trim().slice(0, max);
 }
